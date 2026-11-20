@@ -8,11 +8,11 @@ Production hostname: **https://boxgame.jrhtechservices.party**.
 
 ## Pick a game
 
-| Game                          | Your whole move                                                                                                                                      |
-| ----------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Blank Slate** · 3–8 players | Tap one of five cards to fill a silly blank. The rotating judge taps their favourite. Winner gets 1 point.                                           |
-| **Clue Crew** · 2–8 players   | One person holds their phone facing the others and guesses. Friends describe the word and tap **Got it** or **Pass**. One 60-second turn per player. |
-| **Crowd Pick** · 2–8 players  | Read three odd community projects and tap one favourite. The most popular choice wins its voters 1 point. Five rounds.                               |
+| Game                          | Your whole move                                                                                                                   |
+| ----------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| **Blank Slate** · 3–8 players | Tap one of five cards to fill a silly blank. The rotating judge taps their favourite. Winner gets 1 point.                        |
+| **Clue Crew** · 2–8 players   | The guesser sees only a category. Friends read the word on their own phones and give spoken clues. One 60-second turn per player. |
+| **Crowd Pick** · 3–8 players  | Read three odd community projects and tap one favourite. The most popular choice wins its voters 1 point. Five rounds.            |
 
 | **Blackout Run** · 2–8 players | Tap a trivia answer, then a repair answer. Keep your charge through six rounds; everyone stays in. |
 | **False Front** · 2–8 players | Invent a fake word meaning, then spot the truth in a private two-choice duel. Five rounds. |
@@ -28,7 +28,7 @@ Production hostname: **https://boxgame.jrhtechservices.party**.
 
 Clue Crew uses large manual buttons on every device, including PCs. Motion sensors and tilt gestures are not required. The shared screen never shows the live word, so the guesser cannot read it from the TV. The phone can face outward, and friends can mark guesses from their own phones.
 
-Blank Slate has 32 original prompts and 120 original response cards; Clue Crew has 120 ordinary words/actions; Crowd Pick uses the 18 original scenario sets. Blackout Run starts with 16 independently written trivia questions and generated repair puzzles; False Front has 8 odd-word entries with independently phrased definitions. These are small starter packs: repeated sessions can repeat content. Factual source links appear after each reveal. No commercial card packs, game names, art, or branded word decks are included. Repository references and reuse decisions: [research notes](docs/research.md). Quick player instructions: [game guide](docs/game-guide.md).
+Blank Slate has 32 original prompts and 168 original response cards, including 48 new short responses; Clue Crew has 120 categorised ordinary words/actions; Crowd Pick uses the 18 original scenario sets. Blackout Run starts with 24 independently written medium/hard trivia questions across six subjects and 120 generated multi-step repair puzzles; False Front has 8 odd-word entries with independently phrased definitions. These are small starter packs: repeated sessions can repeat content. Factual source links appear after each reveal. No commercial card packs, game names, art, or branded word decks are included. Repository references and reuse decisions: [research notes](docs/research.md). Quick player instructions: [game guide](docs/game-guide.md).
 
 ## Run with Docker
 

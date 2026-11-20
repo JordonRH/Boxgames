@@ -62,6 +62,8 @@ export interface GameView {
   eligible: number;
   result: RoundResult | null;
   survival?: {
+    difficulty: "medium" | "hard";
+    category: string;
     question: string;
     options: KnowledgeOption[];
     charge: { id: string; charge: number }[];
@@ -99,6 +101,7 @@ export interface GameView {
   charades?: {
     guesserId: string;
     guesserName: string;
+    category: string | null;
     ready: boolean;
     correct: number;
     passed: number;

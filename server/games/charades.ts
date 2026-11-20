@@ -2,15 +2,16 @@ import { randomUUID } from "node:crypto";
 import { z } from "zod";
 import { GameError } from "./core.js";
 import { SimpleGame } from "./simple-base.js";
-import { clueWords } from "./party-content.js";
+import { clueCards } from "./party-content.js";
 import type { RoomView, Scenario } from "../../shared/types.js";
 export class CharadesGame extends SimpleGame {
   private order: string[];
   private done = new Set<string>();
   private guesser: string;
   private guesserName: string;
-  private deck = this.mixed(clueWords);
+  private deck = this.mixed(clueCards);
   private word = "";
+  private category: string | null = null;
   private wordId = randomUUID();
   private ready = false;
   private correct = 0;
@@ -35,8 +36,10 @@ export class CharadesGame extends SimpleGame {
     return this.input ? [this.guesser] : [];
   }
   private draw() {
-    if (!this.deck.length) this.deck = this.mixed(clueWords);
-    this.word = this.deck.pop()!;
+    if (!this.deck.length) this.deck = this.mixed(clueCards);
+    const card = this.deck.pop()!;
+    this.word = card.word;
+    this.category = card.category;
     this.wordId = randomUUID();
   }
   duration(base: number) {
@@ -56,6 +59,8 @@ export class CharadesGame extends SimpleGame {
         this.round++;
         this.guesser = next;
         this.guesserName = this.players.get(next)!.name;
+        this.category = null;
+        this.word = "";
         this.ready = false;
         this.correct = 0;
         this.passed = 0;
@@ -94,6 +99,11 @@ export class CharadesGame extends SimpleGame {
     if (!p.success) throw new GameError("invalid_input", "Tap Got it or Pass.");
     if (p.data.wordId !== this.wordId)
       throw new GameError("stale_word", "That word already moved on.");
+    if (id === this.guesser && p.data.action === "correct")
+      throw new GameError(
+        "clue_giver_only",
+        "A clue-giver marks correct guesses. You can still tap Pass.",
+      );
     const correct = p.data.action === "correct";
     this.history.push({ word: this.word, correct });
     if (correct) this.correct++;
@@ -120,6 +130,7 @@ export class CharadesGame extends SimpleGame {
   end() {
     super.end();
     this.word = "";
+    this.category = null;
     this.history = [];
   }
   remove(id: string) {
@@ -140,8 +151,8 @@ export class CharadesGame extends SimpleGame {
       brief: `${this.guesserName} is guessing`,
       projects: [
         {
-          name: "Hold up your phone",
-          description: "Face the screen towards your friends.",
+          name: "Listen to your friends",
+          description: "The guesser sees only the category.",
           symbol: "clues",
         },
         {
@@ -151,7 +162,7 @@ export class CharadesGame extends SimpleGame {
         },
         {
           name: "Got it or Pass",
-          description: "Anyone can mark the current word.",
+          description: "Clue-givers mark correct guesses; anyone can pass.",
           symbol: "clues",
         },
       ],
@@ -162,6 +173,7 @@ export class CharadesGame extends SimpleGame {
         guesserId: this.guesser,
         guesserName: this.guesserName,
         ready: this.ready,
+        category: this.phase === "vote" ? this.category : null,
         correct: this.correct,
         passed: this.passed,
         history: this.phase === "reveal" ? this.history : [],
@@ -173,7 +185,8 @@ export class CharadesGame extends SimpleGame {
       ? {
           submitted: false,
           charades: {
-            word: this.phase === "vote" ? this.word : null,
+            word:
+              this.phase === "vote" && id !== this.guesser ? this.word : null,
             wordId: this.phase === "vote" ? this.wordId : null,
             isGuesser: id === this.guesser,
           },

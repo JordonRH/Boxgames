@@ -18,29 +18,29 @@ Example original prompt: “The village council spent its entire budget on ____.
 
 ## Clue Crew
 
-The named guesser gets ready, holds their phone so its screen faces their friends, and taps **I’m ready — show the word**. The timer starts then. The guesser should not peek at the screen; everyone else describes the word without saying it.
+The named guesser taps **I’m ready — start guessing**. The timer starts then. Their screen shows only the current category: Animals, Food & drink, Everyday objects, Actions, People & jobs, or Sports & activities. The server never sends them the live word. There is no need to turn the phone around and no word-reveal countdown.
 
-Any player can tap **Got it** for a correct guess, or **Pass** to move on. Large buttons work on phones and PCs; motion permissions and tilt are not needed. Simultaneous taps cannot count a word twice.
+Everyone else reads the word on their own phone or PC and describes it without saying the word, any part of it, or a rhyme. Clue-givers tap **Got it** when the guesser says it correctly. Anyone, including the guesser, can tap **Pass**. The clue reminder stays visible during play. Large buttons work without motion permissions or tilt. Simultaneous taps cannot count a word twice.
 
 Each correct word earns the guesser one point when their turn ends. The usual turn is 60 seconds; relaxed pace is 90 seconds; untimed play can be finished by the host. Each person gets one turn. The TV hides the live word so the guesser cannot read it there.
 
 ## Crowd Pick
 
-Read the three projects and **tap one favourite**. That is your entire move. Wait for the room to choose. The most popular project wins; everyone who chose it gets one point. Tied projects share the win. Five rounds.
+With **at least three players**, read the three projects and **tap one favourite**. That is your entire move. Wait for the room to choose. The most popular project wins; everyone who chose it gets one point. Tied projects share the win. Five rounds.
 
 There are no crate budgets, rank forecasts, or second voting stage in this simpler game.
 
 ## Blackout Run
 
-Tap one of four answers to a trivia question, then tap one answer to a quick repair puzzle. A normal round allows 20 seconds for trivia and 15 for repair; relaxed pace doubles these, and untimed play waits for everyone. The host can pause or end; a missing answer abstains.
+**Goal: finish with the most points after six rounds.** Tap one of four answers to a trivia question, then solve a multi-step repair puzzle. A game covers six different subjects: Space, Science, History, Books, Nature and Numbers. The first three trivia questions are medium difficulty; the last three are hard. The previous easy pack has been replaced. A normal round allows 20 seconds for trivia and 15 for repair; relaxed pace doubles these, and untimed play waits for everyone. The host can pause or end; a missing answer abstains.
 
-Each correct trivia answer earns 2 points and restores 1 charge, up to 3. Each correct repair earns 1 point. If you miss both, lose 1 charge, down to zero. Everyone starts with 3 charge and keeps playing at zero in backup mode. A later correct trivia answer restores charge.
+**Charge is a battery bonus, not an elimination counter.** Each unit left after a full six-round game adds one point to your score. Each correct trivia answer earns 2 points and restores 1 charge, up to 3. Each correct repair earns 1 point. If you miss both, lose 1 charge, down to zero. Everyone starts with 3 charge and keeps playing at zero in backup mode. A later correct trivia answer restores charge.
 
-Points and charge bank only when both stages finish. The shared reveal shows both answers, explanation, individual points and remaining charge. Six rounds, without repeated trivia within a game. After round six the host taps **See final scores** to award each player's remaining charge as a bonus of 0–3 points. Ending early keeps completed-round points and grants no charge bonus. Highest total wins; equal scores tie.
+Points and charge bank only when both stages finish. The shared reveal shows both answers, explanation, individual points and remaining charge. Six rounds, without repeated trivia subjects or repair puzzles within a game. After round six the host taps **See final scores** to award each player's remaining charge as a bonus of 0–3 points. Ending early keeps completed-round points and grants no charge bonus. Highest total wins; equal scores tie.
 
 ## False Front
 
-An unusual word appears. Write a believable **made-up meaning** in 3–80 characters and tap **Lock in my bluff**. If you know the word, invent something different. Exact matches to the stored definition and selected known aliases are rejected; this is not a semantic detector of every possible real definition.
+An unusual word appears. Eight example placeholders offer starting ideas; **Different example** cycles the hint without changing anything you have typed. These are writing suggestions, not real definitions. Write a believable **made-up meaning** in 3–80 characters and tap **Lock in my bluff**. If you know the word, invent something different. Exact matches to the stored definition and selected known aliases are rejected; this is not a semantic detector of every possible real definition.
 
 Next, everyone privately sees **two meanings**: the real one and another player's bluff. Tap the real one for 2 points. Each time someone picks your bluff, you earn 1 point. Identical bluffs merge and all their authors share each fooled-voter point; none of those authors face that bluff themselves. Opponents are assigned to balance exposure, although equal exposure is not guaranteed. If no eligible bluff exists, a house bluff fills the second slot and earns nobody points.
 

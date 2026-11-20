@@ -3,16 +3,16 @@ export const games: GameSummary[] = [
   {
     id: "blackout-run",
     title: "Blackout Run",
-    tagline: "Keep your lights on.",
+    tagline: "Most points wins. Keep a little power in reserve.",
     description:
-      "Answer trivia, then race a quick repair puzzle. Protect your charge through six rounds. Everyone stays in.",
+      "A six-round quiz with harder questions and a puzzle each round. Earn points and protect your battery bonus.",
     minPlayers: 2,
     minutes: "6–10 min",
     color: "lime",
     steps: [
       "Tap an answer to the trivia question. A correct answer earns 2 points and restores 1 charge.",
       "Tap an answer to the repair puzzle for 1 point. Miss both questions and lose 1 charge.",
-      "Everyone plays all six rounds. Your remaining charge adds a final bonus of up to 3 points.",
+      "Highest score after six rounds wins. Charge is your battery bonus: each unit left adds 1 final point. Zero charge never knocks you out.",
     ],
   },
   {
@@ -50,14 +50,14 @@ export const games: GameSummary[] = [
     title: "Clue Crew",
     tagline: "One guesses. Everyone gives clues.",
     description:
-      "Hold your phone facing your friends. Guess the word while they give clues and tap Got it or Pass.",
+      "Guess from spoken clues while your friends read the word on their own screens. Your screen shows only the category.",
     minPlayers: 2,
     minutes: "3–8 min",
     color: "coral",
     steps: [
-      "The named player holds their phone facing everyone else.",
-      "Everyone else describes the word without saying it.",
-      "Tap Got it for a correct guess, or Pass. Each correct guess earns 1 point.",
+      "The named guesser taps I’m ready. They see the category, never the word.",
+      "Everyone else reads the word on their own screen and gives clues without saying the word, any part of it, or rhymes.",
+      "Clue-givers tap Got it when the guesser says the word. Anyone can Pass. Each correct guess earns 1 point.",
     ],
   },
   {
@@ -65,8 +65,8 @@ export const games: GameSummary[] = [
     title: "Crowd Pick",
     tagline: "One tap. One big opinion.",
     description:
-      "Three wonderfully odd projects. Tap the one you think the room will love. Pick a winner for 1 point.",
-    minPlayers: 2,
+      "Vote on delightfully odd proposals with at least three players. Pick the room’s favourite for 1 point.",
+    minPlayers: 3,
     minutes: "3–5 min",
     color: "lime",
     steps: [

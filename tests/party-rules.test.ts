@@ -62,8 +62,15 @@ test("Clue Crew waits for the guesser, keeps words off the shared screen, dedupl
   assert.equal(game.duration(45), 60000);
   const own = game.privateView("alice")!.charades!,
     other = game.privateView("bob")!.charades!;
-  assert.ok(own.word);
-  assert.equal(other.word, own.word);
+  assert.equal(own.word, null);
+  assert.ok(other.word);
+  assert.equal(other.wordId, own.wordId);
+  assert.ok(game.publicView().charades!.category);
+  assert.throws(
+    () =>
+      game.submit("alice", "submit", { action: "correct", wordId: own.wordId }),
+    /clue-giver/,
+  );
   assert.equal(game.privateView(), null);
   assert.equal("word" in game.publicView().charades!, false);
   assert.equal(game.publicView().charades!.history.length, 0);

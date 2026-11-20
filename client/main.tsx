@@ -629,7 +629,7 @@ function Home({
               <span className="hero-highlight">decisions.</span>
             </h1>
             <p className="hero-description">
-              One big screen. Everyone’s phone or PC.
+              {catalogue.length} original party games. Everyone’s phone or PC.
               <br />A room full of original games and very strong opinions.
             </p>
             <div className="hero-actions">
@@ -657,7 +657,7 @@ function Home({
           </div>
           <div
             className="hero-art"
-            aria-label="Five original party games: trivia, bluffing, cards, word guessing, and quick votes"
+            aria-label={`${catalogue.length} original party games: trivia, bluffing, cards, word guessing, and quick votes`}
           >
             <div className="art-grid" />
             <div className="art-caption">
@@ -692,7 +692,7 @@ function Home({
               </div>
               <div className="preview-bottom">
                 <span>
-                  Five games. One room.
+                  {catalogue.length} games. One room.
                   <br />
                   <strong>Which one are we playing?</strong>
                 </span>
@@ -783,7 +783,8 @@ function Home({
             <PartyPopper />
             <h3>Make a night of it.</h3>
             <p>
-              Quick rounds. Wild projects. The people you brought make it good.
+              Trivia, bluffs, cards, clues and quick votes. Choose a game and
+              get straight into it.
             </p>
           </div>
         </section>

@@ -199,6 +199,12 @@ export function PartyGame({ room, busy, gameAction, end }: PartyProps) {
           <Trophy className="big-trophy" size={62} />
           <p className="eyebrow">ONE MORE GAME?</p>
           <h1>Good game, everyone.</h1>
+          {g.survival && (
+            <p>
+              Highest total wins. Finishing all six rounds adds each player’s
+              remaining battery bonus; ending early does not.
+            </p>
+          )}
           <Scores room={room} />
           {host ? (
             <button
@@ -416,10 +422,10 @@ export function PartyGame({ room, busy, gameAction, end }: PartyProps) {
                     {g.phase === "reveal"
                       ? `${g.charades.correct} guessed!`
                       : g.phase === "allocate"
-                        ? `${g.charades.guesserName}, hold your phone facing your friends.`
+                        ? `${g.charades.guesserName}, ready to guess?`
                         : playing
                           ? room.private?.charades?.isGuesser
-                            ? "Don’t peek. Listen to your friends!"
+                            ? "Listen to the clues. What’s the word?"
                             : "Describe this word without saying it."
                           : "Give clues from your own phone."}
                   </h1>
@@ -427,7 +433,9 @@ export function PartyGame({ room, busy, gameAction, end }: PartyProps) {
                     {g.phase === "allocate"
                       ? "The timer starts only when the guesser taps I’m ready."
                       : g.phase === "vote"
-                        ? "Any player can tap Got it or Pass. A word is counted only once."
+                        ? room.private?.charades?.isGuesser
+                          ? "Say your guess out loud. A clue-giver marks it correct; you can tap Pass."
+                          : "Don’t say the word, any part of it, or a rhyme. Keep giving clues until the guesser gets it or passes."
                         : `${g.charades.passed} passed · correct guesses earn 1 point each`}
                   </p>
                 </div>
@@ -440,7 +448,7 @@ export function PartyGame({ room, busy, gameAction, end }: PartyProps) {
                         gameAction("game:submit", { action: "ready" })
                       }
                     >
-                      <Play size={24} /> I’m ready — show the word
+                      <Play size={24} /> I’m ready — start guessing
                     </button>
                   ) : (
                     <Waiting>
@@ -451,17 +459,27 @@ export function PartyGame({ room, busy, gameAction, end }: PartyProps) {
                 {g.phase === "vote" &&
                   (playing && room.private?.charades ? (
                     <>
+                      <p className="clue-category">
+                        <strong>Category:</strong> {g.charades.category}
+                      </p>
                       <div
-                        className={`clue-word ${room.private.charades.isGuesser ? "forehead-word" : ""}`}
+                        className={`clue-word ${room.private.charades.isGuesser ? "guesser-hint" : ""}`}
                       >
                         <span>
                           {room.private.charades.isGuesser
-                            ? "SHOW THIS SCREEN TO YOUR FRIENDS"
+                            ? "YOUR CATEGORY"
                             : "GIVE CLUES FOR"}
                         </span>
-                        <strong>{room.private.charades.word}</strong>
+                        <strong>
+                          {room.private.charades.isGuesser
+                            ? g.charades.category
+                            : room.private.charades.word}
+                        </strong>
                         <small>
-                          <Volume2 size={17} /> Speak your clues out loud
+                          <Volume2 size={17} />{" "}
+                          {room.private.charades.isGuesser
+                            ? "The word stays hidden. Listen and guess out loud."
+                            : "Describe it. Don’t say the word, any part, or a rhyme."}
                         </small>
                       </div>
                       <div className="clue-actions">
@@ -478,19 +496,21 @@ export function PartyGame({ room, busy, gameAction, end }: PartyProps) {
                         >
                           <X size={24} /> Pass
                         </button>
-                        <button
-                          type="button"
-                          className="button primary clue-correct"
-                          disabled={locked}
-                          onClick={() =>
-                            gameAction("game:submit", {
-                              action: "correct",
-                              wordId: room.private!.charades!.wordId,
-                            })
-                          }
-                        >
-                          <Check size={26} /> Got it!
-                        </button>
+                        {!room.private.charades.isGuesser && (
+                          <button
+                            type="button"
+                            className="button primary clue-correct"
+                            disabled={locked}
+                            onClick={() =>
+                              gameAction("game:submit", {
+                                action: "correct",
+                                wordId: room.private!.charades!.wordId,
+                              })
+                            }
+                          >
+                            <Check size={26} /> Got it!
+                          </button>
+                        )}
                       </div>
                       <p className="party-message">
                         {g.charades.correct} correct · {g.charades.passed}{" "}
@@ -502,8 +522,8 @@ export function PartyGame({ room, busy, gameAction, end }: PartyProps) {
                       <Users size={50} />
                       <strong>{g.charades.correct} correct</strong>
                       <p>
-                        The word is on player screens, so the shared display
-                        won’t spoil it.
+                        Clue-givers see the word on their own screens. The
+                        guesser sees only the category: {g.charades.category}.
                       </p>
                     </div>
                   ))}

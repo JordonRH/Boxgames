@@ -98,6 +98,19 @@ for (const gameKey of [
         await until(() => states.get(host)!.pending.length === 1);
         await must(host, "host:admit", { id: states.get(host)!.pending[0].id });
         others.push({ socket, session });
+        if (gameKey === "crowd-pick" && i === 0) {
+          const denied = await request(host, "game:start", {
+            commandId: randomUUID(),
+            gameKey,
+          });
+          assert.equal(denied.ok, false);
+          if (!denied.ok) assert.equal(denied.error, "not_enough_players");
+          assert.equal(states.get(host)!.game, null);
+          assert.equal(
+            states.get(host)!.games.find((g) => g.id === gameKey)!.minPlayers,
+            3,
+          );
+        }
       }
       await pause(1100);
       await must(host, "host:game", { gameKey });
@@ -204,6 +217,9 @@ for (const gameKey of [
         const wordId = states.get(others[0].socket)!.private!.charades!.wordId;
         assert.ok(wordId);
         assert.equal("word" in states.get(host)!.game!.charades!, false);
+        assert.equal(states.get(host)!.private!.charades!.word, null);
+        assert.ok(states.get(host)!.game!.charades!.category);
+        assert.ok(states.get(others[0].socket)!.private!.charades!.word);
         await must(others[0].socket, "game:submit", {
           ...cmd(others[0].socket),
           action: "correct",
@@ -225,6 +241,7 @@ for (const gameKey of [
         assert.equal(states.get(host)!.role, "host");
         assert.equal(states.get(host)!.playerId, hostId);
         assert.equal(states.get(host)!.private!.charades!.isGuesser, true);
+        assert.equal(states.get(host)!.private!.charades!.word, null);
         await must(host, "game:advance", cmd(host));
         assert.equal(
           states.get(host)!.players.find((p) => p.id === hostId)!.score,

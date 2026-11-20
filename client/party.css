@@ -1123,3 +1123,50 @@ button.knowledge-choice:disabled {
     font-size: 0.8rem;
   }
 }
+
+.blackout-goal {
+  display: grid;
+  gap: 8px;
+  padding: 18px 22px;
+  margin-top: 20px;
+  border: 1px solid #647842;
+  border-radius: 16px;
+  background: #252c20;
+  line-height: 1.5;
+}
+.blackout-goal strong {
+  color: #d6f6a5;
+  font-size: 1.1rem;
+}
+.blackout-goal span {
+  color: #eee;
+}
+.blackout-goal small {
+  font-size: 0.9rem;
+  color: #c9d3bd;
+}
+.clue-category {
+  padding: 12px 18px;
+  border-radius: 12px;
+  border: 1px solid #756d8a;
+  color: #e1d9f0;
+  font-size: 1.1rem;
+}
+.guesser-hint {
+  border: 2px solid #c9f56d;
+}
+.bluff-example {
+  margin-top: 12px;
+  min-height: 44px;
+}
+.clue-actions > .button:only-child {
+  grid-column: 1 / -1;
+}
+.guesser-hint {
+  min-height: 220px;
+  background: #24301c;
+  color: #d6f6a5;
+}
+.guesser-hint > small {
+  color: #d8e8c7;
+}

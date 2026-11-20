@@ -1,5 +1,4 @@
 import { z } from "zod";
-import { randomInt } from "node:crypto";
 import type { KnowledgeRow, RoomView } from "../../shared/types.js";
 import { GameError } from "./core.js";
 import { SimpleGame } from "./simple-base.js";
@@ -7,10 +6,24 @@ import { trivia, repairQuestion } from "./knowledge-content.js";
 import { questionOptions, scenario } from "./knowledge-base.js";
 const choiceSchema = z.object({ optionId: z.string().uuid() }).strict();
 export class SurvivalGame extends SimpleGame {
-  private deck = this.mixed(trivia).slice(0, 6);
-  private repairs = Array.from({ length: 6 }, () =>
-    repairQuestion(randomInt(20)),
-  );
+  private deck = this.buildDeck();
+  private buildDeck() {
+    const used = new Set<string>();
+    return (
+      ["medium", "medium", "medium", "hard", "hard", "hard"] as const
+    ).map((difficulty) => {
+      const q = this.mixed(
+        trivia.filter(
+          (q) => q.difficulty === difficulty && !used.has(q.category!),
+        ),
+      )[0];
+      used.add(q.category!);
+      return q;
+    });
+  }
+  private repairs = this.mixed(Array.from({ length: 120 }, (_, seed) => seed))
+    .slice(0, 6)
+    .map(repairQuestion);
   private quizOptions = this.deck.map((q) => this.mixed(questionOptions(q)));
   private repairOptions = this.repairs.map((q) =>
     this.mixed(questionOptions(q)),
@@ -132,6 +145,8 @@ export class SurvivalGame extends SimpleGame {
       ),
       survival: {
         question: q.question,
+        difficulty: this.deck[this.index].difficulty!,
+        category: this.deck[this.index].category!,
         options:
           this.phase === "vote"
             ? this.repairOptions[this.index]

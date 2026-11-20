@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import type { KnowledgeRow, RoomView } from "../shared/types.js";
 type Action = (event: string, data?: Record<string, unknown>) => Promise<void>;
 interface Props {
@@ -36,10 +36,21 @@ export function KnowledgeGame({ room, locked, gameAction }: Props) {
       p = room.private?.survival;
     return (
       <section className="knowledge-board">
-        <div className="charge-roster" aria-label="Player charge">
+        <div className="blackout-goal">
+          <strong>Goal: highest score after 6 rounds.</strong>
+          <span>
+            Trivia +2 · Repair puzzle +1 · Each battery unit left is +1 at the
+            finish.
+          </span>
+          <small>
+            Start with 3 battery units. Right trivia restores 1; miss both
+            answers and lose 1. Everyone keeps playing at zero.
+          </small>
+        </div>
+        <div className="charge-roster" aria-label="Battery bonus remaining">
           {s.charge.map((c) => (
             <span key={c.id} className={c.charge === 0 ? "charge-empty" : ""}>
-              <strong>{name(c.id)}</strong> {c.charge}/3 charge
+              <strong>{name(c.id)}</strong> {c.charge}/3 battery bonus
               {c.charge === 0 ? " · backup mode" : ""}
             </span>
           ))}
@@ -47,19 +58,21 @@ export function KnowledgeGame({ room, locked, gameAction }: Props) {
         <div className="turn-instruction">
           <span>
             {reveal
-              ? "POWER CHECK"
+              ? "ROUND POINTS & BATTERY BONUS"
               : g.phase === "allocate"
-                ? "TRIVIA · 2 POINTS"
-                : "QUICK REPAIR · 1 POINT"}
+                ? `${s.category.toUpperCase()} · ${s.difficulty.toUpperCase()} · 2 POINTS`
+                : "REPAIR PUZZLE · 1 POINT"}
           </span>
-          <h1>{reveal ? "The lights are still on." : s.question}</h1>
+          <h1>{reveal ? "Round complete." : s.question}</h1>
           <p>
             {reveal
-              ? "Everyone stays in. A correct trivia answer can restore your charge next round."
+              ? "Battery is a final score bonus, not an elimination counter. Most total points wins."
               : g.phase === "vote"
-                ? p?.atRisk
-                  ? "Missed the trivia? Get this right to protect your charge."
-                  : "Keep going! A correct repair earns another point."
+                ? !p
+                  ? "Everyone solves a repair puzzle for 1 point. Players who missed trivia also need it to protect their battery bonus."
+                  : p.atRisk
+                    ? "Missed the trivia? Solve this puzzle for 1 point and keep your battery bonus. Miss both and lose 1 battery unit."
+                    : "Trivia right! This puzzle is a chance to earn 1 more point."
                 : "Tap one answer. It locks in immediately."}
           </p>
         </div>
@@ -178,41 +191,14 @@ export function KnowledgeGame({ room, locked, gameAction }: Props) {
         </div>
       ) : playing && p ? (
         g.phase === "allocate" ? (
-          <form
+          <BluffForm
             key={`${g.id}-${g.round}`}
-            className="bluff-form"
-            onSubmit={(event) => {
-              event.preventDefault();
-              const text = new FormData(event.currentTarget).get(
-                "bluff",
-              ) as string;
-              void gameAction("game:submit", { text });
-            }}
-          >
-            <label htmlFor="bluff-meaning">Your made-up meaning</label>
-            <textarea
-              id="bluff-meaning"
-              name="bluff"
-              minLength={3}
-              maxLength={80}
-              rows={3}
-              required
-              disabled={locked}
-              placeholder="A tiny umbrella used by garden gnomes"
-              autoComplete="off"
-            />
-            <p>
-              3–80 characters. Keep it made up—even if you know the real
-              meaning.
-            </p>
-            <button
-              className="button primary large full bluff-submit"
-              type="submit"
-              disabled={locked}
-            >
-              Lock in my bluff
-            </button>
-          </form>
+            seed={
+              g.round + room.players.findIndex((p) => p.id === room.playerId)
+            }
+            locked={locked}
+            gameAction={gameAction}
+          />
         ) : (
           <div className="knowledge-choices bluff-duel">
             {p.options.map((o, i) => (
@@ -254,5 +240,70 @@ export function KnowledgeGame({ room, locked, gameAction }: Props) {
         </button>
       )}
     </section>
+  );
+}
+
+const bluffExamples = [
+  "A tiny umbrella used by garden gnomes",
+  "The pause before pretending you heard someone",
+  "A tool for straightening bent spaghetti",
+  "A formal complaint made by a duck",
+  "The last biscuit nobody admits to taking",
+  "A special pocket for emergency cheese",
+  "The smell of a freshly opened board game",
+  "A polite word for a spectacularly bad haircut",
+];
+function BluffForm({
+  seed,
+  locked,
+  gameAction,
+}: {
+  seed: number;
+  locked: boolean;
+  gameAction: Action;
+}) {
+  const [example, setExample] = useState(seed % bluffExamples.length);
+  return (
+    <form
+      className="bluff-form"
+      onSubmit={(event) => {
+        event.preventDefault();
+        const text = new FormData(event.currentTarget).get("bluff") as string;
+        void gameAction("game:submit", { text });
+      }}
+    >
+      <label htmlFor="bluff-meaning">Your made-up meaning</label>
+      <textarea
+        id="bluff-meaning"
+        name="bluff"
+        minLength={3}
+        maxLength={80}
+        rows={3}
+        required
+        disabled={locked}
+        placeholder={bluffExamples[example]}
+        autoComplete="off"
+        aria-describedby="bluff-help"
+      />
+      <button
+        type="button"
+        className="button subtle small bluff-example"
+        disabled={locked}
+        onClick={() => setExample((example + 1) % bluffExamples.length)}
+      >
+        Different example
+      </button>
+      <p id="bluff-help">
+        3–80 characters. Keep it made up—even if you know the real meaning.
+        Examples are hints, not answers.
+      </p>
+      <button
+        className="button primary large full bluff-submit"
+        type="submit"
+        disabled={locked}
+      >
+        Lock in my bluff
+      </button>
+    </form>
   );
 }

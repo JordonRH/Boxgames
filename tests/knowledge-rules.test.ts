@@ -16,7 +16,7 @@ function answer(g: SurvivalGame, id: string, correct: boolean) {
   const v = g.publicView().survival,
     q =
       trivia.find((x) => x.question === v.question) ??
-      Array.from({ length: 20 }, (_, i) => repairQuestion(i)).find(
+      Array.from({ length: 120 }, (_, i) => repairQuestion(i)).find(
         (x) => x.question === v.question,
       )!;
   const o = v.options.find((o) => (o.text === q.answer) === correct)!;
@@ -201,10 +201,16 @@ test("False Front validates typed text, uses house fallbacks, supports skips and
   assert.equal(g.privateView("a")!.bluff!.options.length, 0);
 });
 test("content packs have enough unique rounds, distinct answers, verified source URLs and bounded definitions", () => {
-  assert.ok(trivia.length >= 16 && oddWords.length >= 8);
+  assert.ok(trivia.length >= 24 && oddWords.length >= 8);
   assert.equal(new Set(trivia.map((q) => q.question)).size, trivia.length);
   for (const q of trivia) assert.equal(new Set([q.answer, ...q.wrong]).size, 4);
-  for (let i = 0; i < 20; i++) {
+  assert.equal(
+    new Set(
+      Array.from({ length: 120 }, (_, seed) => repairQuestion(seed).question),
+    ).size,
+    120,
+  );
+  for (let i = 0; i < 120; i++) {
     const q = repairQuestion(i);
     assert.equal(new Set([q.answer, ...q.wrong]).size, 4);
   }
@@ -251,4 +257,23 @@ test("house fallback cannot repeat the player's own text when every player wrote
     assert.ok(
       g.privateView(p.id)!.bluff!.options.every((o) => o.text !== text),
     );
+});
+
+test("Blackout Run ramps from medium to hard with six distinct subjects and multi-step repairs", () => {
+  const g = new SurvivalGame(players);
+  g.advance();
+  const subjects = new Set<string>();
+  for (let round = 1; round <= 6; round++) {
+    const s = g.publicView().survival;
+    assert.equal(s.difficulty, round <= 3 ? "medium" : "hard");
+    subjects.add(s.category);
+    g.complete(true);
+    g.complete(true);
+    g.advance();
+  }
+  assert.equal(subjects.size, 6);
+  assert.deepEqual(
+    [0, 1, 2, 3, 4, 5].map((seed) => repairQuestion(seed).answer),
+    ["20", "52", "13", "124", "12", "10"],
+  );
 });

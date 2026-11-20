@@ -185,6 +185,9 @@ try {
         players.every((p) => states.get(p).game.phase === "vote"),
       );
       assert.equal("word" in states.get(host).game.charades, false);
+      assert.equal(states.get(host).private.charades.word, null);
+      assert.ok(states.get(host).game.charades.category);
+      assert.ok(states.get(players[0]).private.charades.word);
       const first = states.get(players[0]).private.charades.wordId;
       await command(players[0], "game:submit", {
         ...envelope(players[0]),

@@ -144,7 +144,15 @@ test("phone and host-player DOM controls are enabled and submit the chosen game 
     await render(view(bluff, "a"));
     const textarea = document.querySelector<HTMLTextAreaElement>("textarea")!;
     assert.equal(textarea.disabled, false);
+    const firstPlaceholder = textarea.placeholder;
+    const examples = new Set([firstPlaceholder]);
     textarea.value = "A ceremonial sock basket";
+    for (let i = 0; i < 7; i++) {
+      await tap(".bluff-example");
+      examples.add(textarea.placeholder);
+    }
+    assert.equal(examples.size, 8);
+    assert.equal(textarea.value, "A ceremonial sock basket");
     // Submit through the native form path, using this DOM's FormData implementation.
     const previousFormData = globalThis.FormData;
     globalThis.FormData = dom.window.FormData as any;
@@ -180,7 +188,22 @@ test("phone and host-player DOM controls are enabled and submit the chosen game 
     });
     clues.submit("a", "submit", { action: "ready" });
     clues.complete(false);
+    await render(view(clues, "a"));
+    const hiddenWord = clues.privateView("b")!.charades!.word!;
+    assert.equal(clues.privateView("a")!.charades!.word, null);
+    assert.equal(
+      document.querySelector(".clue-word strong")!.textContent,
+      clues.publicView().charades!.category,
+    );
+    assert.equal(document.querySelector(".clue-correct"), null);
+    await tap(".clue-pass");
+    assert.equal(calls.at(-1)!.data?.action, "pass");
     await render(view(clues, "b"));
+    assert.equal(
+      document.querySelector(".clue-word strong")!.textContent,
+      hiddenWord,
+    );
+    assert.match(document.body.textContent!, /Don’t say the word/);
     await tap(".clue-correct");
     assert.equal(calls.at(-1)!.data?.action, "correct");
     assert.equal(
