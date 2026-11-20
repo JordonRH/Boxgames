@@ -4,6 +4,8 @@ import React, { act } from "react";
 import { JSDOM } from "jsdom";
 import { CardsGame } from "../server/games/cards.js";
 import { CharadesGame } from "../server/games/charades.js";
+import { SurvivalGame } from "../server/games/survival.js";
+import { BluffGame } from "../server/games/bluff.js";
 import { CrowdGame } from "../server/games/crowd.js";
 import type { GameEngine } from "../server/games/core.js";
 import type { RoomView } from "../shared/types.js";
@@ -112,6 +114,62 @@ test("phone and host-player DOM controls are enabled and submit the chosen game 
       event: "game:submit",
       data: { project: 0 },
     });
+    const survival = new SurvivalGame(people);
+    survival.advance();
+    await render(view(survival, "a", true));
+    await tap("button.knowledge-choice");
+    assert.deepEqual(calls.at(-1), {
+      event: "game:submit",
+      data: { optionId: survival.publicView().survival.options[0].id },
+    });
+    survival.complete(true);
+    await render(view(survival, "b"));
+    await tap("button.knowledge-choice");
+    assert.equal(calls.at(-1)!.event, "game:vote");
+    await render({
+      ...view(survival, "b"),
+      game: {
+        ...view(survival, "b").game!,
+        paused: true,
+        pauseReason: "Host paused",
+      },
+    });
+    assert.equal(
+      document.querySelector<HTMLButtonElement>("button.knowledge-choice")!
+        .disabled,
+      true,
+    );
+    const bluff = new BluffGame(people);
+    bluff.advance();
+    await render(view(bluff, "a"));
+    const textarea = document.querySelector<HTMLTextAreaElement>("textarea")!;
+    assert.equal(textarea.disabled, false);
+    textarea.value = "A ceremonial sock basket";
+    // Submit through the native form path, using this DOM's FormData implementation.
+    const previousFormData = globalThis.FormData;
+    globalThis.FormData = dom.window.FormData as any;
+    try {
+      await tap(".bluff-submit");
+    } finally {
+      globalThis.FormData = previousFormData;
+    }
+    assert.deepEqual(calls.at(-1), {
+      event: "game:submit",
+      data: { text: textarea.value },
+    });
+    bluff.complete(true);
+    await render(view(bluff, "a"));
+    assert.equal(
+      document.querySelectorAll("button.knowledge-choice").length,
+      2,
+    );
+    await tap("button.knowledge-choice");
+    assert.equal(calls.at(-1)!.event, "game:vote");
+    await render(view(bluff, null, true));
+    assert.equal(
+      document.querySelectorAll("button.knowledge-choice").length,
+      0,
+    );
     const clues = new CharadesGame(people);
     clues.advance();
     await render(view(clues, "a"));

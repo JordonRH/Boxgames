@@ -36,6 +36,16 @@ export interface PlayerView {
   connected: boolean;
   score: number;
 }
+export interface KnowledgeOption {
+  id: string;
+  text: string;
+}
+export interface KnowledgeRow {
+  id: string;
+  points: number;
+  quiz?: boolean;
+  repair?: boolean;
+}
 export interface GameView {
   gameKey?: string;
   id: string;
@@ -51,6 +61,32 @@ export interface GameView {
   submitted: number;
   eligible: number;
   result: RoundResult | null;
+  survival?: {
+    question: string;
+    options: KnowledgeOption[];
+    charge: { id: string; charge: number }[];
+    answers: {
+      quiz: string;
+      repair: string;
+      explanation: string;
+      source: string;
+    } | null;
+    rows: KnowledgeRow[];
+  };
+  bluff?: {
+    term: string;
+    truth: string | null;
+    source: string | null;
+    skipped: boolean;
+    options: {
+      id: string;
+      text: string;
+      authors: string[];
+      truth: boolean;
+      voters: string[];
+    }[];
+    rows: KnowledgeRow[];
+  };
   crowd?: { totals: Triple; winners: number[]; revealed: boolean };
   cards?: {
     prompt: string;
@@ -98,6 +134,12 @@ export interface RoomView {
     forecast?: number | null;
     vote?: number | null;
     submitted: boolean;
+    survival?: { choice: string | null; atRisk: boolean | null };
+    bluff?: {
+      text: string | null;
+      options: KnowledgeOption[];
+      choice: string | null;
+    };
     crowd?: { choice: number | null };
     cards?: {
       hand: { id: string; text: string }[];

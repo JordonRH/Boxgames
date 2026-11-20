@@ -30,6 +30,24 @@ Read the three projects and **tap one favourite**. That is your entire move. Wai
 
 There are no crate budgets, rank forecasts, or second voting stage in this simpler game.
 
+## Blackout Run
+
+Tap one of four answers to a trivia question, then tap one answer to a quick repair puzzle. A normal round allows 20 seconds for trivia and 15 for repair; relaxed pace doubles these, and untimed play waits for everyone. The host can pause or end; a missing answer abstains.
+
+Each correct trivia answer earns 2 points and restores 1 charge, up to 3. Each correct repair earns 1 point. If you miss both, lose 1 charge, down to zero. Everyone starts with 3 charge and keeps playing at zero in backup mode. A later correct trivia answer restores charge.
+
+Points and charge bank only when both stages finish. The shared reveal shows both answers, explanation, individual points and remaining charge. Six rounds, without repeated trivia within a game. After round six the host taps **See final scores** to award each player's remaining charge as a bonus of 0–3 points. Ending early keeps completed-round points and grants no charge bonus. Highest total wins; equal scores tie.
+
+## False Front
+
+An unusual word appears. Write a believable **made-up meaning** in 3–80 characters and tap **Lock in my bluff**. If you know the word, invent something different. Exact matches to the stored definition and selected known aliases are rejected; this is not a semantic detector of every possible real definition.
+
+Next, everyone privately sees **two meanings**: the real one and another player's bluff. Tap the real one for 2 points. Each time someone picks your bluff, you earn 1 point. Identical bluffs merge and all their authors share each fooled-voter point; none of those authors face that bluff themselves. Opponents are assigned to balance exposure, although equal exposure is not guaranteed. If no eligible bluff exists, a house bluff fills the second slot and earns nobody points.
+
+Normal pace is 45 seconds to write and 20 seconds to vote; relaxed doubles these. Untimed play waits for everyone. Missing writers can still vote; missing voters abstain. Scores bank after voting finishes. Five rounds; tied final totals share the win. The 8-word starter pack can repeat between games.
+
+The host can **Skip round · no points** during writing or voting. This discards that round's text/votes and reveals only the real definition, useful if typed content needs moderation. Text otherwise stays private until it appears in a player's duel, and authors/voters stay hidden until reveal. Ending a game discards unfinished input. Boxgame does not retain a permanent text history; live round text is cleared on the next round or game end.
+
 ## If buttons are unavailable
 
 - The **Shared display** label means that device is hosting rather than playing. Join yourself with **Play on this device** before starting.

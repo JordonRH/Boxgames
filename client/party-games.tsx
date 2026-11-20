@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import type { RoomView, GameView } from "../shared/types.js";
 import { games as catalogue } from "../shared/games.js";
+import { KnowledgeGame } from "./knowledge-games.js";
 type Action = (event: string, data?: Record<string, unknown>) => Promise<void>;
 export interface PartyProps {
   room: RoomView;
@@ -84,7 +85,15 @@ export function PartyGame({ room, busy, gameAction, end }: PartyProps) {
               ? g.phase === "allocate"
                 ? "Get ready"
                 : "Give clues & guess"
-              : "Pick one favourite";
+              : g.survival
+                ? g.phase === "allocate"
+                  ? "Answer trivia"
+                  : "Quick repair"
+                : g.bluff
+                  ? g.phase === "allocate"
+                    ? "Write a bluff"
+                    : "Spot the truth"
+                  : "Pick one favourite";
   return (
     <main
       className={`party-game party-${g.gameKey} ${playing ? "is-controller" : "is-display"}`}
@@ -161,7 +170,11 @@ export function PartyGame({ room, busy, gameAction, end }: PartyProps) {
               ? "Big Got it and Pass buttons work on every device. No motion permissions or app needed."
               : g.cards
                 ? "Your five cards are private. Only the played cards are revealed."
-                : "No budgets. No predictions. Just tap one project."}
+                : g.survival
+                  ? "Everyone stays in, even at zero charge. Scores bank when both stages finish; the charge bonus is awarded when the host finishes round six."
+                  : g.bluff
+                    ? "Other players never see who wrote a bluff until the reveal. Matching bluffs share the credit. Missing answers abstain."
+                    : "No budgets. No predictions. Just tap one project."}
           </p>
           {g.phase === "instructions" &&
             (host ? (
@@ -202,6 +215,13 @@ export function PartyGame({ room, busy, gameAction, end }: PartyProps) {
       ) : (
         g.phase !== "instructions" && (
           <>
+            {(g.survival || g.bluff) && (
+              <KnowledgeGame
+                room={room}
+                locked={locked}
+                gameAction={gameAction}
+              />
+            )}
             {g.cards && (
               <section className="cards-board">
                 <div className="turn-instruction">

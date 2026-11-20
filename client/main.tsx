@@ -657,7 +657,7 @@ function Home({
           </div>
           <div
             className="hero-art"
-            aria-label="Three original party games: cards, word guessing, and quick votes"
+            aria-label="Five original party games: trivia, bluffing, cards, word guessing, and quick votes"
           >
             <div className="art-grid" />
             <div className="art-caption">
@@ -692,7 +692,7 @@ function Home({
               </div>
               <div className="preview-bottom">
                 <span>
-                  Three games. One room.
+                  Five games. One room.
                   <br />
                   <strong>Which one are we playing?</strong>
                 </span>

@@ -33,7 +33,13 @@ async function must<T = unknown>(s: Socket, event: string, data: unknown) {
   assert.ok(a.ok, `${event} must succeed${!a.ok ? `: ${a.error}` : ""}`);
   return a.data;
 }
-for (const gameKey of ["blank-slate", "crowd-pick", "clue-crew"])
+for (const gameKey of [
+  "blank-slate",
+  "crowd-pick",
+  "clue-crew",
+  "blackout-run",
+  "false-front",
+])
   test(`${gameKey}: real controllers, game selection, host play, private data and role-safe actions`, async () => {
     const httpServer = createServer();
     await new Promise<void>((r) => httpServer.listen(0, "127.0.0.1", r));
@@ -70,7 +76,13 @@ for (const gameKey of ["blank-slate", "crowd-pick", "clue-crew"])
           .get(host)!
           .games.map((g) => g.id)
           .sort(),
-        ["blank-slate", "clue-crew", "crowd-pick"],
+        [
+          "blackout-run",
+          "blank-slate",
+          "clue-crew",
+          "crowd-pick",
+          "false-front",
+        ],
       );
       await must(host, "host:play", { name: "Playing host" });
       const hostId = states.get(host)!.playerId!;
@@ -142,6 +154,46 @@ for (const gameKey of ["blank-slate", "crowd-pick", "clue-crew"])
           await must(p.socket, "game:submit", { ...cmd(p.socket), project: 0 });
         await until(() => states.get(host)!.game!.phase === "reveal");
         assert.ok(states.get(host)!.players.every((p) => p.score === 1));
+      } else if (gameKey === "blackout-run" || gameKey === "false-front") {
+        const all = [host, ...others.map((p) => p.socket)];
+        for (const [i, s] of all.entries())
+          await must(s, "game:submit", {
+            ...cmd(s),
+            ...(gameKey === "blackout-run"
+              ? { optionId: states.get(s)!.game!.survival!.options[0].id }
+              : { text: `A ceremonial sock basket number ${i}` }),
+          });
+        await until(() =>
+          all.every((s) => states.get(s)!.game!.phase === "vote"),
+        );
+        if (gameKey === "false-front") {
+          assert.deepEqual(states.get(host)!.game!.bluff!.options, []);
+          assert.equal(states.get(host)!.game!.bluff!.truth, null);
+        } else assert.equal(states.get(host)!.game!.survival!.answers, null);
+        for (const s of all) {
+          const options =
+            gameKey === "blackout-run"
+              ? states.get(s)!.game!.survival!.options
+              : states.get(s)!.private!.bluff!.options;
+          assert.ok(options.every((o) => !("truth" in o) && !("authors" in o)));
+          await must(s, "game:vote", { ...cmd(s), optionId: options[0].id });
+        }
+        await until(() => states.get(host)!.game!.phase === "reveal");
+        assert.equal(
+          (gameKey === "blackout-run"
+            ? states.get(host)!.game!.survival!.rows
+            : states.get(host)!.game!.bluff!.rows
+          ).length,
+          3,
+        );
+        others[0].socket.disconnect();
+        const restored = await connect();
+        await must(restored, "room:resume", {
+          roomId: others[0].session.roomId,
+          token: others[0].session.token,
+        });
+        others[0].socket = restored;
+        assert.equal(states.get(restored)!.game!.phase, "reveal");
       } else {
         assert.equal(states.get(host)!.game!.charades!.guesserId, hostId);
         assert.equal(states.get(host)!.game!.deadline, null);

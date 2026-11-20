@@ -21,6 +21,15 @@ import { games as catalogue } from "../../shared/games.js";
 import { CardsGame } from "./cards.js";
 import { CharadesGame } from "./charades.js";
 import { CrowdGame } from "./crowd.js";
+import { SurvivalGame } from "./survival.js";
+import { BluffGame } from "./bluff.js";
+const constructors = {
+  "blank-slate": CardsGame,
+  "clue-crew": CharadesGame,
+  "crowd-pick": CrowdGame,
+  "blackout-run": SurvivalGame,
+  "false-front": BluffGame,
+};
 
 const allocationSchema = z
   .object({
@@ -211,11 +220,7 @@ export const gameRegistry = new Map<string, GameFactory>([
           minPlayers: summary.minPlayers,
           metadata: summary,
           create: (players: { id: string; name: string }[]) =>
-            summary.id === "blank-slate"
-              ? new CardsGame(players)
-              : summary.id === "clue-crew"
-                ? new CharadesGame(players)
-                : new CrowdGame(players),
+            new constructors[summary.id as keyof typeof constructors](players),
         },
       ] as [string, GameFactory],
   ),

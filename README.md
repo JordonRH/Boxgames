@@ -14,18 +14,21 @@ Production hostname: **https://boxgame.jrhtechservices.party**.
 | **Clue Crew** · 2–8 players   | One person holds their phone facing the others and guesses. Friends describe the word and tap **Got it** or **Pass**. One 60-second turn per player. |
 | **Crowd Pick** · 2–8 players  | Read three odd community projects and tap one favourite. The most popular choice wins its voters 1 point. Five rounds.                               |
 
+| **Blackout Run** · 2–8 players | Tap a trivia answer, then a repair answer. Keep your charge through six rounds; everyone stays in. |
+| **False Front** · 2–8 players | Invent a fake word meaning, then spot the truth in a private two-choice duel. Five rounds. |
+
 ### Start playing
 
 1. Create a room and share its code or QR link.
 2. Friends join on phones, tablets, or PCs; the host approves them.
 3. Choose a game, press **Start**, then start the first round after the short rules.
-4. Game controls appear on player devices. One tap plays a card or chooses a project; there is no extra submit step.
+4. Game controls appear on player devices. One tap plays a card or chooses a project; there is no extra submit step for tap-based choices. False Front has one short written bluff and a Lock in button.
 
 **Hosting from your phone? Tap “Play on this device” in the lobby first.** That gives the host a player seat and private controls on the same device. Hosting on a TV? Leave it as the shared display and join on your own phone. A host who is also playing keeps host controls; their reconnect credential restores both roles.
 
 Clue Crew uses large manual buttons on every device, including PCs. Motion sensors and tilt gestures are not required. The shared screen never shows the live word, so the guesser cannot read it from the TV. The phone can face outward, and friends can mark guesses from their own phones.
 
-Blank Slate has 32 original prompts and 120 original response cards; Clue Crew has 120 ordinary words/actions; Crowd Pick uses the 18 original scenario sets. No commercial card packs, game names, art, or branded word decks are included. Repository references and reuse decisions: [research notes](docs/research.md). Quick player instructions: [game guide](docs/game-guide.md).
+Blank Slate has 32 original prompts and 120 original response cards; Clue Crew has 120 ordinary words/actions; Crowd Pick uses the 18 original scenario sets. Blackout Run starts with 16 independently written trivia questions and generated repair puzzles; False Front has 8 odd-word entries with independently phrased definitions. These are small starter packs: repeated sessions can repeat content. Factual source links appear after each reveal. No commercial card packs, game names, art, or branded word decks are included. Repository references and reuse decisions: [research notes](docs/research.md). Quick player instructions: [game guide](docs/game-guide.md).
 
 ## Run with Docker
 

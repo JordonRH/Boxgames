@@ -86,7 +86,7 @@ try {
       .get(host)
       .games.map((g) => g.id)
       .sort(),
-    ["blank-slate", "clue-crew", "crowd-pick"],
+    ["blackout-run", "blank-slate", "clue-crew", "crowd-pick", "false-front"],
   );
   await command(host, "host:play", { name: "Smoke host" });
   const hostId = states.get(host).playerId;
@@ -102,7 +102,13 @@ try {
     await until(() => states.get(host).pending.length === 1);
     await command(host, "host:admit", { id: states.get(host).pending[0].id });
   }
-  for (const gameKey of ["blank-slate", "crowd-pick", "clue-crew"]) {
+  for (const gameKey of [
+    "blank-slate",
+    "crowd-pick",
+    "clue-crew",
+    "blackout-run",
+    "false-front",
+  ]) {
     await sleep(1100);
     await command(host, "host:game", { gameKey });
     await command(host, "game:start", { commandId: randomUUID() });
@@ -136,6 +142,39 @@ try {
         await command(p, "game:submit", { ...envelope(p), project: 0 });
       await until(() => states.get(host).game.phase === "reveal");
       assert.ok(states.get(host).players.every((p) => p.score === 1));
+    } else if (gameKey === "blackout-run" || gameKey === "false-front") {
+      const all = [host, ...players];
+      for (const [i, p] of all.entries())
+        await command(p, "game:submit", {
+          ...envelope(p),
+          ...(gameKey === "blackout-run"
+            ? { optionId: states.get(p).game.survival.options[0].id }
+            : { text: `A ceremonial sock basket number ${i}` }),
+        });
+      await until(() => all.every((p) => states.get(p).game.phase === "vote"));
+      if (gameKey === "false-front") {
+        assert.deepEqual(states.get(host).game.bluff.options, []);
+        assert.equal(states.get(host).game.bluff.truth, null);
+      } else assert.equal(states.get(host).game.survival.answers, null);
+      for (const p of all) {
+        const options =
+          gameKey === "blackout-run"
+            ? states.get(p).game.survival.options
+            : states.get(p).private.bluff.options;
+        assert.ok(options.every((o) => !("truth" in o) && !("authors" in o)));
+        await command(p, "game:vote", {
+          ...envelope(p),
+          optionId: options[0].id,
+        });
+      }
+      await until(() => states.get(host).game.phase === "reveal");
+      assert.equal(
+        (gameKey === "blackout-run"
+          ? states.get(host).game.survival.rows
+          : states.get(host).game.bluff.rows
+        ).length,
+        4,
+      );
     } else {
       assert.equal(states.get(host).game.charades.guesserId, hostId);
       await command(host, "game:submit", {
@@ -179,7 +218,13 @@ try {
       revision: info.revision,
       assets: assets.length,
       players: 4,
-      games: ["blank-slate", "crowd-pick", "clue-crew"],
+      games: [
+        "blank-slate",
+        "crowd-pick",
+        "clue-crew",
+        "blackout-run",
+        "false-front",
+      ],
       hostPlayer: true,
       privateViews: true,
       transports: ["polling", "websocket"],
