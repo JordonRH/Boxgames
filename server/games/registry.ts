@@ -9,42 +9,19 @@ import {
   type ParcelState,
 } from "./parcel.js";
 
-export class GameError extends Error {
-  constructor(
-    public code: string,
-    message: string,
-  ) {
-    super(message);
-  }
-}
-type PublicGame = Omit<
-  GameView,
-  "deadline" | "remainingMs" | "paused" | "pauseReason"
->;
-/** Transport-independent game boundary. Room infrastructure never reads engine inputs. */
-export interface GameEngine {
-  readonly id: string;
-  phaseId: string;
-  readonly phase: GameView["phase"];
-  readonly result: GameView["result"];
-  readonly input: boolean;
-  readonly final: boolean;
-  readonly advancesToInput: boolean;
-  hasPlayer(id: string): boolean;
-  score(id: string): number;
-  duration(baseSeconds: number): number | null;
-  submit(id: string, action: "submit" | "vote", payload: unknown): void;
-  advance(): "changed" | "lobby";
-  end(): void;
-  complete(timeout: boolean): boolean;
-  remove(id: string): void;
-  publicView(): PublicGame;
-  privateView(id?: string): RoomView["private"];
-}
-export interface GameFactory {
-  minPlayers: number;
-  create(players: { id: string; name: string }[]): GameEngine;
-}
+import {
+  GameError,
+  type GameEngine,
+  type GameFactory,
+  type PublicGame,
+} from "./core.js";
+export { GameError } from "./core.js";
+export type { GameEngine, GameFactory } from "./core.js";
+import { games as catalogue } from "../../shared/games.js";
+import { CardsGame } from "./cards.js";
+import { CharadesGame } from "./charades.js";
+import { CrowdGame } from "./crowd.js";
+
 const allocationSchema = z
   .object({
     allocation: z
@@ -190,6 +167,7 @@ export class ParcelEngine implements GameEngine {
   publicView(): PublicGame {
     const g = this.state;
     return {
+      gameKey: "parcel-parliament",
       id: g.id,
       phaseId: g.phaseId,
       phase: g.phase,
@@ -225,10 +203,38 @@ export class ParcelEngine implements GameEngine {
   }
 }
 export const gameRegistry = new Map<string, GameFactory>([
+  ...catalogue.map(
+    (summary) =>
+      [
+        summary.id,
+        {
+          minPlayers: summary.minPlayers,
+          metadata: summary,
+          create: (players: { id: string; name: string }[]) =>
+            summary.id === "blank-slate"
+              ? new CardsGame(players)
+              : summary.id === "clue-crew"
+                ? new CharadesGame(players)
+                : new CrowdGame(players),
+        },
+      ] as [string, GameFactory],
+  ),
+  // Keep the original engine for existing protocol clients and historical checks.
   [
     "parcel-parliament",
     {
       minPlayers: 3,
+      metadata: {
+        id: "parcel-parliament",
+        title: "Parcel Parliament",
+        tagline: "Original advanced mode",
+        description: "Legacy game",
+        minPlayers: 3,
+        minutes: "10–15 min",
+        color: "lime",
+        steps: [],
+        hidden: true,
+      },
       create: (players) =>
         new ParcelEngine(
           createGame(players, randomUUID, () => randomInt(1000000) / 1000000),

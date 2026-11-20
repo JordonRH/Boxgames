@@ -1,5 +1,6 @@
 import { createHash, randomBytes, randomInt, randomUUID } from "node:crypto";
 import { z } from "zod";
+import { defaultGame } from "../../shared/games.js";
 import type { Server, Socket } from "socket.io";
 import type {
   Ack,
@@ -71,6 +72,8 @@ export interface Room {
   players: Map<string, Player>;
   pending: Map<string, Pending>;
   game: GameEngine | null;
+  selectedGame: string;
+  hostPlayerId: string | null;
   minimum: number;
   duration: number;
   deadline: number | null;
@@ -214,6 +217,8 @@ export class RoomManager {
           players: new Map(),
           pending: new Map(),
           game: null,
+          selectedGame: defaultGame,
+          hostPlayerId: null,
           minimum: 3,
           duration: 45,
           deadline: null,
@@ -335,6 +340,14 @@ export class RoomManager {
           room.hostSocket = socket.id;
           room.hostGone = null;
           role = "host";
+          if (room.hostPlayerId) {
+            const seat = room.players.get(room.hostPlayerId);
+            if (seat) {
+              seat.socketId = socket.id;
+              seat.expires = null;
+              playerId = seat.id;
+            }
+          }
           if (old && old !== socket.id)
             this.io.sockets.sockets.get(old)?.disconnect(true);
         } else {
@@ -467,6 +480,54 @@ export class RoomManager {
         return {};
       },
     );
+    on(
+      "host:game",
+      z.object({ gameKey: z.string().max(40) }).strict(),
+      ({ gameKey }) => {
+        const room = this.host(socket);
+        if (room.game)
+          throw new Fault("game_active", "Choose the next game in the lobby.");
+        if (!this.games.has(gameKey))
+          throw new Fault("unknown_game", "That game is unavailable.");
+        room.selectedGame = gameKey;
+        room.activity = this.clock();
+        this.broadcast(room);
+        return {};
+      },
+    );
+    on("host:play", z.object({ name: nameSchema }).strict(), ({ name }) => {
+      const room = this.host(socket);
+      if (room.game)
+        throw new Fault(
+          "game_active",
+          "Join yourself in the lobby before starting.",
+        );
+      if (room.hostPlayerId) return {};
+      if (room.players.size >= 8)
+        throw new Fault("room_full", "All eight seats are taken.");
+      if (
+        [...room.players.values(), ...room.pending.values()].some(
+          (p) => p.name.toLocaleLowerCase() === name.toLocaleLowerCase(),
+        )
+      )
+        throw new Fault(
+          "name_taken",
+          "That name is taken. Choose another name.",
+        );
+      const seat: Player = {
+        id: id(),
+        name,
+        hash: hash(token()),
+        socketId: socket.id,
+        expires: null,
+      };
+      room.players.set(seat.id, seat);
+      room.hostPlayerId = seat.id;
+      socket.data.playerId = seat.id;
+      room.activity = this.clock();
+      this.broadcast(room);
+      return {};
+    });
     on("room:close", z.object({}).strict(), () => {
       this.close(this.host(socket), "The host closed this room.");
       return {};
@@ -476,7 +537,7 @@ export class RoomManager {
       z
         .object({
           commandId: z.string().uuid(),
-          gameKey: z.string().max(40).default("parcel-parliament"),
+          gameKey: z.string().max(40).optional(),
         })
         .strict(),
       ({ commandId, gameKey }) => {
@@ -485,13 +546,14 @@ export class RoomManager {
         if (room.game)
           throw new Fault("game_active", "This game has already started.");
         const players = [...room.players.values()].filter((p) => p.socketId);
-        const factory = this.games.get(gameKey);
+        const chosen = gameKey ?? room.selectedGame;
+        const factory = this.games.get(chosen);
         if (!factory)
           throw new Fault("unknown_game", "That game is unavailable.");
         if (players.length < factory.minPlayers)
           throw new Fault(
             "not_enough_players",
-            "At least three connected players are needed.",
+            `At least ${factory.minPlayers} connected players are needed.`,
           );
         for (const p of [...room.pending.values()])
           this.remove(
@@ -499,6 +561,7 @@ export class RoomManager {
             p.id,
             "The game started before your request was accepted.",
           );
+        room.selectedGame = chosen;
         room.game = factory.create(players);
         room.minimum = factory.minPlayers;
         room.removed.clear();
@@ -701,13 +764,18 @@ export class RoomManager {
   }
   private syncPause(room: Room) {
     if (!room.game?.input) return;
+    const missingRequired = room.game
+      .requiredPlayers?.()
+      .some((id) => !room.players.get(id)?.socketId);
     const reason = !room.hostSocket
       ? "Waiting for the host to reconnect"
       : this.connected(room) < room.minimum
         ? `Waiting for at least ${room.minimum} connected players`
-        : room.manualPause
-          ? "Paused by the host"
-          : null;
+        : missingRequired
+          ? "Waiting for this turn’s player to reconnect"
+          : room.manualPause
+            ? "Paused by the host"
+            : null;
     if (reason && !room.pauseReason) {
       room.remaining =
         room.deadline === null
@@ -730,7 +798,10 @@ export class RoomManager {
     const p = room.players.get(pId) ?? room.pending.get(pId);
     if (!p) return;
     const s = this.io.sockets.sockets.get(p.socketId ?? "");
-    if (s) {
+    if (pId === room.hostPlayerId) {
+      room.hostPlayerId = null;
+      if (s) s.data.playerId = undefined;
+    } else if (s) {
       s.emit("room:closed", { message: reason });
       s.data = {};
     }
@@ -740,7 +811,9 @@ export class RoomManager {
     const g = room.game;
     if (g) {
       if (g.score(pId) > 0) room.removed.set(pId, g.score(pId));
+      const previous = g.phase;
       g.remove(pId);
+      if (g.phase !== previous) this.phaseTimer(room);
     }
   }
   close(room: Room, message: string) {
@@ -767,7 +840,7 @@ export class RoomManager {
         .get(room.hostSocket)
         ?.emit("room:state", this.view(room, "host"));
     for (const p of room.players.values())
-      if (p.socketId)
+      if (p.socketId && p.socketId !== room.hostSocket)
         this.io.sockets.sockets
           .get(p.socketId)
           ?.emit("room:state", this.view(room, "player", p.id));
@@ -778,6 +851,7 @@ export class RoomManager {
           ?.emit("room:state", this.view(room, "pending", p.id));
   }
   view(room: Room, role: RoomView["role"], playerId?: string): RoomView {
+    if (role === "host") playerId = room.hostPlayerId ?? undefined;
     const g = room.game;
     const privateView = g?.privateView(playerId) ?? null;
     return {
@@ -804,6 +878,10 @@ export class RoomManager {
                 score,
               })),
             ],
+      selectedGame: room.selectedGame,
+      games: [...this.games.values()].flatMap((factory) =>
+        factory.metadata && !factory.metadata.hidden ? [factory.metadata] : [],
+      ),
       pending:
         role === "host"
           ? [...room.pending.values()].map((p) => ({ id: p.id, name: p.name }))

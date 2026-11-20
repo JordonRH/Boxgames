@@ -41,6 +41,9 @@ import type {
   GameView,
 } from "../shared/types.js";
 import "./style.css";
+import "./party.css";
+import { PartyGame, type PartyProps } from "./party-games.js";
+import { games as catalogue } from "../shared/games.js";
 
 const socket = io({ autoConnect: false });
 const saved = () => {
@@ -82,7 +85,7 @@ function emit<T = unknown>(event: string, data: unknown): Promise<T> {
         return;
       }
       if (ack.ok) resolve(ack.data);
-      else reject(new Error(ack.message));
+      else reject(Object.assign(new Error(ack.message), { code: ack.error }));
     });
   });
 }
@@ -259,7 +262,8 @@ function App() {
     try {
       await emit(event, data);
     } catch (e) {
-      setError((e as Error).message);
+      if ((e as Error & { code?: string }).code !== "stale_word")
+        setError((e as Error).message);
     } finally {
       setBusy(false);
     }
@@ -428,7 +432,7 @@ function App() {
         </div>
       )}
       {!connected && (
-        <div className="notice" role="status">
+        <div className="notice connection-notice" role="status">
           <WifiOff size={18} />
           <span>
             Connecting to Boxgame…{" "}
@@ -446,7 +450,6 @@ function App() {
         </main>
       ) : room ? (
         <>
-          {!connected && <div className="offline-shield" />}
           <Room
             room={room}
             busy={busy || !connected || !ready}
@@ -654,7 +657,7 @@ function Home({
           </div>
           <div
             className="hero-art"
-            aria-label="Parcel Parliament: allocate crates, predict the crowd, pick a spotlight"
+            aria-label="Three original party games: cards, word guessing, and quick votes"
           >
             <div className="art-grid" />
             <div className="art-caption">
@@ -663,16 +666,16 @@ function Home({
             <div className="game-preview">
               <div className="preview-top">
                 <span className="pill dark-pill">
-                  <Box size={14} /> THE FIRST GAME
+                  <Box size={14} /> PICK A GAME
                 </span>
                 <span className="preview-players">3–8 players</span>
               </div>
               <h2>
-                Parcel
+                Blank
                 <br />
-                Parliament<span>✳</span>
+                Slate<span>✳</span>
               </h2>
-              <p>Small budget. Big opinions.</p>
+              <p>Play a card. Get a laugh.</p>
               <div className="crate-stage">
                 <div className="crate crate-one">
                   <Box size={62} />
@@ -689,9 +692,9 @@ function Home({
               </div>
               <div className="preview-bottom">
                 <span>
-                  6 crates. 3 projects.
+                  Three games. One room.
                   <br />
-                  <strong>Where will the crowd go?</strong>
+                  <strong>Which one are we playing?</strong>
                 </span>
                 <span className="round-sticker">
                   <Sparkles size={19} />
@@ -710,6 +713,17 @@ function Home({
             </div>
             <span className="art-label">YOUR PHONE IS YOUR CONTROLLER</span>
           </div>
+        </section>
+        <section className="home-game-list" aria-label="Games available">
+          {catalogue.map((game) => (
+            <article key={game.id} className={`home-game option-${game.color}`}>
+              <span>
+                {game.minPlayers}–8 PLAYERS · {game.minutes}
+              </span>
+              <h2>{game.title}</h2>
+              <p>{game.description}</p>
+            </article>
+          ))}
         </section>
         <section className="join-strip">
           <div>
@@ -854,6 +868,11 @@ function Room({
   gameAction: (e: string, d?: Record<string, unknown>) => Promise<void>;
   end: () => void;
 }) {
+  const [hostName, setHostName] = useState("Me"),
+    [showLobbyRules, setShowLobbyRules] = useState(false);
+  const available = room.games?.length ? room.games : catalogue;
+  const selected =
+    available.find((g) => g.id === room.selectedGame) ?? available[0];
   const [qr, setQr] = useState(""),
     [copied, setCopied] = useState(false);
   useEffect(() => {
@@ -917,10 +936,23 @@ function Room({
           <Box size={30} />
           <div>
             <span>UP NEXT</span>
-            <h3>Parcel Parliament</h3>
-            <p>6 crates. 3 projects. Big opinions.</p>
+            <h3>{selected.title}</h3>
+            <p>{selected.tagline}</p>
           </div>
         </div>
+        <button
+          className="button subtle full"
+          onClick={() => setShowLobbyRules(!showLobbyRules)}
+        >
+          {showLobbyRules ? "Hide rules" : "How do I play?"}
+        </button>
+        {showLobbyRules && (
+          <ol className="lobby-rules">
+            {selected.steps.map((step) => (
+              <li key={step}>{step}</li>
+            ))}
+          </ol>
+        )}
         <div className="section-label">
           <h2>Your people</h2>
           <span>{room.players.length}/8</span>
@@ -943,10 +975,7 @@ function Room({
           <h1>
             Bring your people<span className="lime-text">.</span>
           </h1>
-          <p>
-            Share the code. Approve your friends. Make some questionable
-            decisions.
-          </p>
+          <p>Choose a game. Let your friends in. Tap Start.</p>
         </div>
         <Button
           className="subtle"
@@ -1030,41 +1059,94 @@ function Room({
           </div>
           <Roster room={room} action={action} busy={busy} />
         </section>
-        <aside className="lobby-aside">
-          <div className="selected-game">
-            <div className="selected-heading">
-              <span className="pill dark-pill">
-                <Check size={14} /> TONIGHT’S GAME
-              </span>
-              <Box size={28} />
+        <aside className="lobby-aside game-picker-aside">
+          <section className="host-play-card">
+            {room.playerId ? (
+              <>
+                <span className="pill">
+                  <Check size={15} /> YOU’RE PLAYING
+                </span>
+                <h2>
+                  {room.players.find((p) => p.id === room.playerId)?.name},
+                  you’re in.
+                </h2>
+                <p>
+                  Game buttons and your private cards will appear on this
+                  device.
+                </p>
+                <button
+                  className="button subtle small"
+                  disabled={busy}
+                  onClick={() => action("host:remove", { id: room.playerId })}
+                >
+                  Use as shared screen instead
+                </button>
+              </>
+            ) : (
+              <>
+                <h2>Playing on this phone?</h2>
+                <p>
+                  Join yourself to get game buttons here. This becomes your
+                  private controller.
+                </p>
+                <form
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    action("host:play", { name: hostName });
+                  }}
+                >
+                  <label className="sr-only" htmlFor="host-name">
+                    Your player name
+                  </label>
+                  <input
+                    id="host-name"
+                    placeholder="Your name"
+                    value={hostName}
+                    maxLength={40}
+                    onChange={(e) => setHostName(e.target.value)}
+                  />
+                  <button
+                    className="button primary full"
+                    disabled={busy || !hostName.trim()}
+                  >
+                    <Users size={18} /> Play on this device
+                  </button>
+                </form>
+                <small>
+                  Hosting on a TV? Leave this as the shared screen and join from
+                  your own phone.
+                </small>
+              </>
+            )}
+          </section>
+          <section className="game-picker">
+            <h2>Choose your game</h2>
+            <div className="game-options">
+              {available.map((game) => (
+                <button
+                  type="button"
+                  className={`game-option option-${game.color} ${game.id === selected.id ? "chosen" : ""}`}
+                  aria-pressed={game.id === selected.id}
+                  key={game.id}
+                  disabled={busy}
+                  onClick={() => action("host:game", { gameKey: game.id })}
+                >
+                  <div>
+                    <strong>{game.title}</strong>
+                    {game.id === selected.id && <Check size={20} />}
+                  </div>
+                  <p>{game.tagline}</p>
+                  <small>
+                    {game.minPlayers}–8 players · {game.minutes}
+                  </small>
+                </button>
+              ))}
             </div>
-            <h2>
-              Parcel
-              <br />
-              Parliament
-            </h2>
-            <p>Small budget. Big opinions.</p>
-            <div className="selected-art">
-              <Box />
-              <Orbit />
-              <Box />
-            </div>
-            <p className="selected-blurb">
-              Fund wonderfully odd projects. Predict the crowd. Put your
-              favourite in the spotlight.
-            </p>
-            <div className="game-meta">
-              <span>
-                <Users size={16} /> 3–8 players
-              </span>
-              <span>
-                <Clock3 size={16} /> 10–15 min
-              </span>
-            </div>
-          </div>
+            <p className="picked-description">{selected.description}</p>
+          </section>
           <div className="timing">
             <label htmlFor="timing">
-              <Settings2 size={16} /> Round pace
+              <Settings2 size={16} /> Pace
             </label>
             <div className="select-wrap">
               <select
@@ -1075,28 +1157,29 @@ function Room({
                   action("host:settings", { duration: Number(e.target.value) })
                 }
               >
-                <option value={45}>Quick · 45 seconds</option>
-                <option value={90}>Relaxed · 90 seconds</option>
-                <option value={0}>No timer · take your time</option>
+                <option value={45}>Quick rounds</option>
+                <option value={90}>More thinking time</option>
+                <option value={0}>No timer</option>
               </select>
               <ChevronDown size={16} />
             </div>
-            <p>You can pause any timed stage.</p>
           </div>
-          <Button
-            className="primary large full"
-            disabled={busy || connected < 3}
-            onClick={() => action("game:start", { commandId: uid() })}
+          <button
+            className="button primary large full"
+            disabled={busy || connected < selected.minPlayers}
+            onClick={() =>
+              action("game:start", { commandId: uid(), gameKey: selected.id })
+            }
           >
             <Play size={20} />
-            {connected < 3
-              ? `${3 - connected} more ${3 - connected === 1 ? "player" : "players"} to go`
-              : "Let’s play"}
-          </Button>
+            {connected < selected.minPlayers
+              ? `${selected.minPlayers - connected} more ${selected.minPlayers - connected === 1 ? "player" : "players"} to go`
+              : `Start ${selected.title}`}
+          </button>
           <p className="form-note">
-            {connected < 3
-              ? "At least 3 connected players to start."
-              : "Everyone in? The rules are up next."}
+            {connected < selected.minPlayers
+              ? `Needs ${selected.minPlayers} players. The host counts if you join yourself.`
+              : "A quick how-to appears before the first round."}
           </p>
         </aside>
       </div>
@@ -1104,7 +1187,15 @@ function Room({
   );
 }
 
-function Game({
+function Game(props: PartyProps) {
+  return props.room.game?.gameKey &&
+    props.room.game.gameKey !== "parcel-parliament" ? (
+    <PartyGame {...props} />
+  ) : (
+    <LegacyGame {...props} />
+  );
+}
+function LegacyGame({
   room,
   busy,
   gameAction,
@@ -1116,7 +1207,8 @@ function Game({
   end: () => void;
 }) {
   const game = room.game!,
-    host = room.role === "host",
+    hostControls = room.role === "host",
+    host = hostControls && !room.playerId,
     own = room.private;
   const [allocation, setAllocation] = useState<Triple>([0, 0, 0]),
     [forecast, setForecast] = useState<number | null>(null),
@@ -1219,7 +1311,7 @@ function Game({
             The trick? Figuring out what everyone else will do.
           </p>
           <Rules />
-          {host ? (
+          {hostControls ? (
             <Button
               className="primary large"
               disabled={busy}
@@ -1236,14 +1328,14 @@ function Game({
       ) : game.phase === "final" ? (
         <Final
           room={room}
-          host={host}
+          host={hostControls}
           busy={busy}
           advance={() => gameAction("game:advance")}
         />
       ) : game.phase === "reveal" ? (
         <Results
           room={room}
-          host={host}
+          host={hostControls}
           busy={busy}
           advance={() => gameAction("game:advance")}
         />

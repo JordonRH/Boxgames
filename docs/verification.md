@@ -1,5 +1,15 @@
 # Verification record
 
+## Simpler games and phone controls
+
+The current picker offers Blank Slate, Clue Crew and Crowd Pick. A host can explicitly join as a player on the same device; host credentials retain both roles across reconnects. The full-screen disconnected overlay was removed, while action buttons still respect connection/pause state and the connection notice remains visible.
+
+Added rule checks for anonymous card judging, private hands, foreign-card/foreign-judge rejection, score idempotency, guesser readiness, per-word duplicate taps, completed-turn scoring, removal, one-tap crowd choices and ties. Real Socket.IO room tests cover all three games, selecting the game in the lobby, combined host/player permissions, host reconnect, and a disconnected active guesser. DOM tests actually click playable cards, ready, correct, pass and crowd-choice controls, including a host-player phone view.
+
+The production-image smoke now plays a round of each of the three games with a host-player and three controllers across polling and WebSockets. DOM simulation is not a rendered mobile browser; real-device layout/motion feel is not certified, and no tilt feature is claimed.
+
+All 22 tests passed, the production build passed, and the full dependency audit reported zero vulnerabilities. A built loopback candidate passed the three-game smoke with four controllers and the combined host/player role. The earlier 900-client soak figures below cover the original engine; they do not benchmark all three new game modes.
+
 ## Automated coverage
 
 - Complete six-round game using real Socket.IO clients, separate rooms and generated disposable credentials.

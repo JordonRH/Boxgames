@@ -89,7 +89,10 @@ test("complete six-round game: isolation, private views, retries, stale clients,
     assert.equal(states.get(other)?.players.length, 0);
     assert.equal(states.get(players[0])?.pending.length, 0);
     await must(host, "host:settings", { duration: 0 });
-    await must(host, "game:start", { commandId: randomUUID() });
+    await must(host, "game:start", {
+      commandId: randomUUID(),
+      gameKey: "parcel-parliament",
+    });
     await pause(1100);
     const cmd = (s: Socket) => ({
       commandId: randomUUID(),
@@ -263,7 +266,10 @@ test("fake clock enforces deadlines, frozen timers, host lease, idle and empty e
       host.send("host:admit", { id: [...r.pending.keys()][0] });
     }
     const room = manager.rooms.get(session.roomId)!;
-    host.send("game:start", { commandId: randomUUID() });
+    host.send("game:start", {
+      commandId: randomUUID(),
+      gameKey: "parcel-parliament",
+    });
     const cmd = () => ({
       commandId: randomUUID(),
       gameId: room.game!.id,

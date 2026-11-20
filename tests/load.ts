@@ -120,7 +120,10 @@ try {
         }
         await wait(1100);
         await send(host, "host:settings", { duration: 0 });
-        await send(host, "game:start", { commandId: randomUUID() });
+        await send(host, "game:start", {
+          commandId: randomUUID(),
+          gameKey: "parcel-parliament",
+        });
         await synced([host, ...players]);
         groups.push({ host, players });
       }),
@@ -175,7 +178,10 @@ try {
         else if (phase === "final") {
           await send(host, "game:advance", cmd(host));
           await wait(150);
-          await send(host, "game:start", { commandId: randomUUID() });
+          await send(host, "game:start", {
+            commandId: randomUUID(),
+            gameKey: "parcel-parliament",
+          });
         }
         await wait(2200);
       }

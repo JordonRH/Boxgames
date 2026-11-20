@@ -37,6 +37,7 @@ export interface PlayerView {
   score: number;
 }
 export interface GameView {
+  gameKey?: string;
   id: string;
   phaseId: string;
   phase: Phase;
@@ -50,6 +51,34 @@ export interface GameView {
   submitted: number;
   eligible: number;
   result: RoundResult | null;
+  crowd?: { totals: Triple; winners: number[]; revealed: boolean };
+  cards?: {
+    prompt: string;
+    judgeId: string;
+    options: { id: string; text: string; authorId?: string }[];
+    winnerId: string | null;
+    winnerText: string | null;
+    message: string | null;
+  };
+  charades?: {
+    guesserId: string;
+    guesserName: string;
+    ready: boolean;
+    correct: number;
+    passed: number;
+    history: { word: string; correct: boolean }[];
+  };
+}
+export interface GameSummary {
+  id: string;
+  title: string;
+  tagline: string;
+  description: string;
+  minPlayers: number;
+  minutes: string;
+  color: string;
+  steps: string[];
+  hidden?: boolean;
 }
 export interface RoomView {
   id: string;
@@ -60,13 +89,26 @@ export interface RoomView {
   hostConnected: boolean;
   players: PlayerView[];
   pending: { id: string; name: string }[];
+  selectedGame: string;
+  games: GameSummary[];
   game: GameView | null;
   private: {
-    rank: Rank;
-    allocation: Triple | null;
-    forecast: number | null;
-    vote: number | null;
+    rank?: Rank;
+    allocation?: Triple | null;
+    forecast?: number | null;
+    vote?: number | null;
     submitted: boolean;
+    crowd?: { choice: number | null };
+    cards?: {
+      hand: { id: string; text: string }[];
+      isJudge: boolean;
+      playedId: string | null;
+    };
+    charades?: {
+      word: string | null;
+      wordId: string | null;
+      isGuesser: boolean;
+    };
   } | null;
   joinUrl: string;
   now: number;

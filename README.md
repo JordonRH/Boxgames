@@ -6,11 +6,26 @@ An original, self-hosted party-game platform for one shared screen and everyone'
 
 Production hostname: **https://boxgame.jrhtechservices.party**.
 
-## The first game: Parcel Parliament
+## Pick a game
 
-Three wonderfully odd community projects need funding. Each player privately splits six crates, predicts which project will receive the largest, middle, or smallest combined pile, then votes for a spotlight project. A correct prediction earns three points. Putting at least two crates into a spotlight winner earns two points, at most once. Six rounds, shared ties, no speed bonuses.
+| Game                          | Your whole move                                                                                                                                      |
+| ----------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Blank Slate** · 3–8 players | Tap one of five cards to fill a silly blank. The rotating judge taps their favourite. Winner gets 1 point.                                           |
+| **Clue Crew** · 2–8 players   | One person holds their phone facing the others and guesses. Friends describe the word and tap **Got it** or **Pass**. One 60-second turn per player. |
+| **Crowd Pick** · 2–8 players  | Read three odd community projects and tap one favourite. The most popular choice wins its voters 1 point. Five rounds.                               |
 
-Includes 18 original scenario sets. Rules, scoring, content, UI, and wording are independently written. The broad host-and-controller format is the only product inspiration; no commercial game content or assets are bundled.
+### Start playing
+
+1. Create a room and share its code or QR link.
+2. Friends join on phones, tablets, or PCs; the host approves them.
+3. Choose a game, press **Start**, then start the first round after the short rules.
+4. Game controls appear on player devices. One tap plays a card or chooses a project; there is no extra submit step.
+
+**Hosting from your phone? Tap “Play on this device” in the lobby first.** That gives the host a player seat and private controls on the same device. Hosting on a TV? Leave it as the shared display and join on your own phone. A host who is also playing keeps host controls; their reconnect credential restores both roles.
+
+Clue Crew uses large manual buttons on every device, including PCs. Motion sensors and tilt gestures are not required. The shared screen never shows the live word, so the guesser cannot read it from the TV. The phone can face outward, and friends can mark guesses from their own phones.
+
+Blank Slate has 32 original prompts and 120 original response cards; Clue Crew has 120 ordinary words/actions; Crowd Pick uses the 18 original scenario sets. No commercial card packs, game names, art, or branded word decks are included. Repository references and reuse decisions: [research notes](docs/research.md). Quick player instructions: [game guide](docs/game-guide.md).
 
 ## Run with Docker
 
@@ -99,7 +114,7 @@ Tests use disposable local rooms and generated credentials; they never target pr
 
 - Refresh/reconnect in the same browser tab restores your seat and acknowledged submission.
 - The server stores only hashes of reconnect credentials. The tab stores its random pass in session storage, never in a QR or URL.
-- A disconnected player's seat lasts five minutes. Three connected game participants are required to run an input stage.
+- A disconnected player's seat lasts five minutes. The selected game needs two or three connected participants; a named judge or guesser must also be connected.
 - Host disconnect pauses input. Host has five minutes to return; host privileges never transfer automatically.
 - Closing the tab or changing devices does not transfer a seat. Request a new seat in the lobby instead.
 - **A process restart or deployment deletes every room.** Restart persistence is deliberately outside MVP scope.

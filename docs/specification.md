@@ -1,5 +1,11 @@
 # Accepted MVP specification
 
+## Subsequent owner-approved simplification
+
+The owner requested simpler gameplay, usable phone controls, additional Heads Up-like and comedy card games, and repository research. The current UI offers original **Blank Slate**, **Clue Crew**, and **Crowd Pick**, with two/three-player minimums appropriate to each game. The complex original Parcel Parliament is retained only for compatibility and historical checks, not offered in the new picker. The host may explicitly take a player seat on the same device. It then becomes that host’s private controller; ordinary host-only displays receive no private hand or live guessing word.
+
+See [game guide](game-guide.md) for the replacement rules and [research](research.md) for repository links and source decisions. The remaining original MVP record below describes the initially approved version, rather than all later game choices.
+
 Approved by the owner on 20 November 2026: original Parcel Parliament game; in-memory rooms cleared on restart; host controls on the shared screen, with separate host remote deferred. Additional instruction: phones **and** other PCs must join; sleek UI; fast, simple play. Source destination: `JordonRH/Boxgames`; Docker and CI/CD required.
 
 ## Product boundary

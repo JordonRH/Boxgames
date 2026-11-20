@@ -57,7 +57,9 @@ const envelope = (s) => ({
 });
 let host;
 try {
-  const health = await fetch(`${base}/api/health`);
+  const health = await fetch(`${base}/api/health?check=${Date.now()}`, {
+    cache: "no-store",
+  });
   assert.ok(health.ok);
   const info = await health.json();
   if (expected) assert.equal(info.revision, expected);
@@ -79,6 +81,16 @@ try {
   assert.ok((await fetch(`${base}/privacy`)).ok);
   host = await connect();
   const session = await command(host, "room:create", {});
+  assert.deepEqual(
+    states
+      .get(host)
+      .games.map((g) => g.id)
+      .sort(),
+    ["blank-slate", "clue-crew", "crowd-pick"],
+  );
+  await command(host, "host:play", { name: "Smoke host" });
+  const hostId = states.get(host).playerId;
+  assert.ok(hostId);
   const players = [];
   for (let i = 0; i < 3; i++) {
     const p = await connect();
@@ -90,26 +102,75 @@ try {
     await until(() => states.get(host).pending.length === 1);
     await command(host, "host:admit", { id: states.get(host).pending[0].id });
   }
-  await command(host, "game:start", { commandId: randomUUID() });
-  await command(host, "game:advance", envelope(host));
-  await until(() =>
-    players.every((p) => states.get(p)?.game?.phase === "allocate"),
-  );
-  assert.equal(states.get(host).private, null);
-  assert.equal(states.get(host).game.result, null);
-  for (const p of players)
-    await command(p, "game:submit", {
-      ...envelope(p),
-      allocation: [2, 2, 2],
-      forecast: 0,
-    });
-  await until(() => players.every((p) => states.get(p).game.phase === "vote"));
-  for (const p of players)
-    await command(p, "game:vote", { ...envelope(p), project: 0 });
-  await until(() => states.get(host).game.phase === "reveal");
-  assert.ok(states.get(host).game.result.rows.every((p) => p.points === 5));
-  await command(host, "game:end", envelope(host));
-  assert.ok(states.get(host).players.every((p) => p.score === 5));
+  for (const gameKey of ["blank-slate", "crowd-pick", "clue-crew"]) {
+    await sleep(1100);
+    await command(host, "host:game", { gameKey });
+    await command(host, "game:start", { commandId: randomUUID() });
+    await command(host, "game:advance", envelope(host));
+    await until(() =>
+      players.every((p) => states.get(p)?.game?.phase === "allocate"),
+    );
+    assert.equal(states.get(host).role, "host");
+    assert.equal(states.get(host).playerId, hostId);
+    if (gameKey === "blank-slate") {
+      assert.equal(states.get(host).private.cards.isJudge, true);
+      for (const p of players)
+        await command(p, "game:submit", {
+          ...envelope(p),
+          cardId: states.get(p).private.cards.hand[0].id,
+        });
+      await until(() => states.get(host).game.phase === "vote");
+      const options = states.get(host).game.cards.options;
+      assert.ok(options.every((c) => !("authorId" in c)));
+      await command(host, "game:vote", {
+        ...envelope(host),
+        cardId: options[0].id,
+      });
+      await until(() => states.get(host).game.phase === "reveal");
+      assert.equal(
+        states.get(host).players.reduce((n, p) => n + p.score, 0),
+        1,
+      );
+    } else if (gameKey === "crowd-pick") {
+      for (const p of [host, ...players])
+        await command(p, "game:submit", { ...envelope(p), project: 0 });
+      await until(() => states.get(host).game.phase === "reveal");
+      assert.ok(states.get(host).players.every((p) => p.score === 1));
+    } else {
+      assert.equal(states.get(host).game.charades.guesserId, hostId);
+      await command(host, "game:submit", {
+        ...envelope(host),
+        action: "ready",
+      });
+      await until(() =>
+        players.every((p) => states.get(p).game.phase === "vote"),
+      );
+      assert.equal("word" in states.get(host).game.charades, false);
+      const first = states.get(players[0]).private.charades.wordId;
+      await command(players[0], "game:submit", {
+        ...envelope(players[0]),
+        action: "correct",
+        wordId: first,
+      });
+      await until(
+        () => states.get(players[1]).private.charades.wordId !== first,
+      );
+      await command(players[1], "game:submit", {
+        ...envelope(players[1]),
+        action: "correct",
+        wordId: states.get(players[1]).private.charades.wordId,
+      });
+      await command(host, "game:advance", envelope(host));
+      await until(() => states.get(host).game.phase === "reveal");
+      assert.equal(
+        states.get(host).players.find((p) => p.id === hostId).score,
+        2,
+      );
+    }
+    await command(host, "game:end", envelope(host));
+    await command(host, "game:advance", envelope(host));
+    await until(() => states.get(host).game === null);
+  }
   await command(host, "room:close", {});
   host = null;
   console.log(
@@ -117,8 +178,9 @@ try {
       status: "pass",
       revision: info.revision,
       assets: assets.length,
-      players: 3,
-      roundScore: 5,
+      players: 4,
+      games: ["blank-slate", "crowd-pick", "clue-crew"],
+      hostPlayer: true,
       privateViews: true,
       transports: ["polling", "websocket"],
     }),
