@@ -112,4 +112,6 @@ React + TypeScript + Express + Socket.IO. One authoritative Node process. `serve
 
 Target: up to 100 rooms / 900 host-and-player connections, pending deployment-specific validation. Hard ceilings are configurable downwards. No horizontal replicas: a second process would have a separate room registry.
 
+The synthetic fast-round sample measured about 32 Mbps outbound payload at that target; budget **50 Mbps upload** for internet headroom. Default abuse quotas allow five owned rooms per network identity, so a large event behind one shared NAT needs an explicit quota adjustment. The load harness gives each room its own synthetic network identity; it does not imply those quotas disappear in production.
+
 The accepted product specification and remaining risks are in [docs/specification.md](docs/specification.md).

@@ -36,11 +36,13 @@ jobs:
           REVISION: ${{ github.sha }}
         run: |
           docker run -d --name boxgame-ci --read-only --cap-drop ALL --security-opt no-new-privileges --tmpfs /tmp -e PUBLIC_ORIGIN=http://localhost:8100 -e TRUSTED_PROXY_IPS= -p 127.0.0.1:8100:3000 "boxgame:$REVISION"
+          ready=false
           for attempt in $(seq 1 30); do
-            if curl -fsS http://127.0.0.1:8100/api/health > /dev/null; then exit 0; fi
+            if curl -fsS http://127.0.0.1:8100/api/health > /dev/null; then ready=true; break; fi
             sleep 1
           done
-          exit 1
+          test "$ready" = true
+          node scripts/smoke.mjs http://127.0.0.1:8100 http://localhost:8100 "$REVISION"
       - name: Package deployment
         if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
         env:
@@ -77,10 +79,15 @@ jobs:
           GH_REPO: ${{ github.repository }}
         run: |
           tag="boxgame-$REVISION"
-          if gh release view "$tag" > /dev/null 2>&1; then
+          draft="$(gh release view "$tag" --json isDraft --jq '.isDraft' 2>/dev/null || true)"
+          if [ "$draft" = false ]; then
             echo 'This commit already has a release.'
             exit 0
           fi
           tar -czf boxgame-release.tar.gz -C release .
           sha256sum boxgame-release.tar.gz > boxgame-release.sha256
-          gh release create "$tag" boxgame-release.tar.gz boxgame-release.sha256 --target "$REVISION" --title "Boxgame ${REVISION:0:7}" --notes 'Verified production image. The Linux updater deploys this release only while it matches main, then checks health and restores the previous image on failure.'
+          if [ "$draft" != true ]; then
+            gh release create "$tag" --draft --target "$REVISION" --title "Boxgame ${REVISION:0:7}" --notes 'Verified production image. The Linux updater deploys this release only while it matches main, then checks health and restores the previous image on failure.'
+          fi
+          gh release upload "$tag" boxgame-release.tar.gz boxgame-release.sha256 --clobber
+          gh release edit "$tag" --draft=false --latest

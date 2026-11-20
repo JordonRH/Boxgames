@@ -58,7 +58,7 @@ Defaults: create 5 rooms/10 minutes/network and 5 owned rooms; joins 30/minute/n
 
 Core flows use keyboard operation, focus indicators, 44px targets, text status labels, no color-only decisions or sound dependency, configurable/untimed stages, and useful disconnected/stale/locked/full/expired errors. WCAG 2.2 AA is the usability target and still requires real-browser review.
 
-Capacity target: 100 rooms / 900 game connections. Shared Linux host has four reported CPUs and ~16 GiB RAM; app container limited to 2 CPUs/1 GiB, with other workloads present. Small JSON, no media. Provision ~25 Mbps upload for busy internet use. Validate command latency, memory, event-loop lag, and a 30-minute soak; never claim unlimited or measured public capacity from synthetic results alone.
+Capacity target: 100 rooms / 900 game connections. Shared Linux host has four reported CPUs and ~16 GiB RAM; app container limited to 2 CPUs/1 GiB, with other workloads present. Small JSON, no media. Initial bandwidth estimate was 25 Mbps; the fast-round synthetic test measured ~32 Mbps, so provision **50 Mbps upload** for headroom at the full internet-play target. Validate command latency, memory, event-loop lag, and a 30-minute soak; never claim unlimited or measured public capacity from synthetic results alone.
 
 ## Deployment and recovery
 

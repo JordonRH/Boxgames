@@ -185,6 +185,22 @@ export function createApp(
   app.use((_req, res) => {
     res.status(404).json({ error: "not_found" });
   });
+  // Express must not print raw request URLs, headers, or exception content.
+  const requestError: express.ErrorRequestHandler = (
+    error,
+    _req,
+    res,
+    _next,
+  ) => {
+    const status = error?.status === 400 ? 400 : 500;
+    console.error(JSON.stringify({ event: "request_error", status }));
+    if (res.headersSent) {
+      res.destroy();
+      return;
+    }
+    res.status(status).json({ error: "request_failed" });
+  };
+  app.use(requestError);
   const sweep = setInterval(() => limits.sweep(), 60000);
   sweep.unref();
   return {
