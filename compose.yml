@@ -7,6 +7,10 @@ services:
       args:
         APP_REVISION: ${APP_REVISION:-local}
     container_name: boxgame
+    networks:
+      default: {}
+      proxy:
+        aliases: [boxgame]
     restart: unless-stopped
     init: true
     ports:
@@ -33,3 +37,7 @@ services:
       options:
         max-size: "10m"
         max-file: "3"
+networks:
+  proxy:
+    external: true
+    name: ${PROXY_NETWORK:-aitrace_proxy}

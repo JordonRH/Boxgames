@@ -2,19 +2,19 @@
 
 ## Public entry point — operator only
 
-| Setting                              | Required value                                                                                      |
-| ------------------------------------ | --------------------------------------------------------------------------------------------------- |
-| Hostname                             | `boxgame.jrhtechservices.party`                                                                     |
-| Game host binding                    | `127.0.0.1:8100`                                                                                    |
-| Origin for a host-native connector   | `http://127.0.0.1:8100`                                                                             |
-| Origin for a containerized connector | Operator-selected reachable service address; container `localhost` does not refer to the Linux host |
-| Protocol support                     | HTTP and Socket.IO WebSocket upgrade; polling fallback allowed                                      |
-| Cache                                | No caching of `/socket.io`, `/api`, or HTML; hashed `/assets/` may be cached                        |
-| Application public origin            | `https://boxgame.jrhtechservices.party`                                                             |
+| Setting                                         | Required value                                                               |
+| ----------------------------------------------- | ---------------------------------------------------------------------------- |
+| Hostname                                        | `boxgame.jrhtechservices.party`                                              |
+| Game host binding                               | `127.0.0.1:8100`                                                             |
+| Origin for a host-native connector              | `http://127.0.0.1:8100`                                                      |
+| Origin for the existing containerized connector | **`http://boxgame:3000`**, on shared Docker network `aitrace_proxy`          |
+| Protocol support                                | HTTP and Socket.IO WebSocket upgrade; polling fallback allowed               |
+| Cache                                           | No caching of `/socket.io`, `/api`, or HTML; hashed `/assets/` may be cached |
+| Application public origin                       | `https://boxgame.jrhtechservices.party`                                      |
 
 No tunnel, DNS, route, reverse-proxy, or certificate configuration has been inspected or modified. The operator must configure that boundary. Do not publish the Docker API. Public access requires HTTPS; private Wi-Fi play can use the explicit LAN profile described in README.
 
-If the existing connector cannot reach loopback, the operator can choose an explicitly shared Docker network and service origin, or a restricted LAN binding. Confirm reachability before routing. Do not expose port 8100 to the internet as a substitute for HTTPS.
+Hearth & Spoon, Cadence, and the dashboard are attached to `aitrace_proxy`. Boxgame now joins that same network with alias `boxgame`; its application listens on container port `3000`. The host-local address in the other apps' READMEs is not evidence of the origin configured in their public routes. A diagnostic client on the shared network can reach `http://boxgame:3000`; the operator should use that service address for this containerized deployment. Do not expose port 8100 to the internet as a substitute for HTTPS.
 
 Proxy identity controls must trust only the actual immediate upstream peer; do not use an unrestricted proxy trust setting. The app understands `CF-Connecting-IP` only when explicitly enabled for exact allowlisted peer addresses. Until that is configured, public traffic shares a proxy network quota. Basic admission, actor limits, and global ceilings still apply.
 

@@ -16,6 +16,8 @@ Includes 18 original scenario sets. Rules, scoring, content, UI, and wording are
 
 Requires Docker Engine and Docker Compose v2. No database or game credentials are needed.
 
+This server already has the shared `aitrace_proxy` Docker network used by the other public apps. Boxgame joins it with the DNS alias `boxgame`. On a fresh machine, create that external network first (`docker network create aitrace_proxy`), or set `PROXY_NETWORK` to your existing proxy network.
+
 ```bash
 docker compose up -d --build
 curl -fsS http://127.0.0.1:8100/api/health
@@ -24,6 +26,8 @@ curl -fsS http://127.0.0.1:8100/api/health
 If your shell needs to activate the existing Docker group, use `sg docker -c 'docker compose up -d --build'`. Do not run the container as privileged or mount the Docker socket into the **game** container.
 
 Defaults bind the game to **127.0.0.1:8100**, with the public hostname as its join origin. You can review it on the server at `http://localhost:8100`; both loopback browser origins are explicitly allowed. The public entry point must forward HTTP and WebSocket traffic to that origin. Until routing is configured, other devices cannot reach this loopback binding directly.
+
+For the existing containerized connector, set the route's service to **HTTP `boxgame:3000`**, reachable on `aitrace_proxy`. The host-local `127.0.0.1:8100` address is for a connector running on the host network; a container's loopback refers to that container.
 
 The operator performs every tunnel/route action and every `sudo` command. Hostname and origin handoff: [deployment guide](docs/deployment.md). No tunnel is created or managed by this project.
 

@@ -62,7 +62,7 @@ Capacity target: 100 rooms / 900 game connections. Shared Linux host has four re
 
 ## Deployment and recovery
 
-Host `boxgame.jrhtechservices.party`; origin `http://127.0.0.1:8100` for a host-native connector. Containerized connector needs operator-selected reachable origin. All tunnel/routes and all sudo commands are operator-only. LAN mode explicitly binds a reachable LAN address and sets its matching public origin; QR always encodes the configured reachable address.
+Host `boxgame.jrhtechservices.party`; existing containerized connector origin **`http://boxgame:3000`** over shared external network `aitrace_proxy`. Host-local review remains `http://127.0.0.1:8100`. All tunnel/routes and all sudo commands are operator-only. LAN mode explicitly binds a reachable LAN address and sets its matching public origin; QR always encodes the configured reachable address.
 
 Non-root read-only game container, capability drop, resource/PID/log bounds, health/readiness version+revision. CI on GitHub-hosted workers: test/audit/build/container smoke. Main-branch releases feed a local Docker updater over public HTTPS without stored GitHub credentials. Checksum/archive allowlist, current-main verification, health/revision check, rollback; no PR jobs on the Linux box. Updater Docker access is an administrative trust boundary. Back up source/content/releases, not transient player data. No tunnel or credential inspection needed.
 
