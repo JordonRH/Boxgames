@@ -1,0 +1,86 @@
+name: Boxgame CI and deploy
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: boxgame-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  verify:
+    name: Test and build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: "24"
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - run: npm audit --omit=dev --audit-level=high
+      - run: npm test
+      - run: npm run build
+      - name: Build release container
+        env:
+          REVISION: ${{ github.sha }}
+        run: docker build --build-arg "APP_REVISION=$REVISION" -t "boxgame:$REVISION" .
+      - name: Smoke-test container
+        env:
+          REVISION: ${{ github.sha }}
+        run: |
+          docker run -d --name boxgame-ci --read-only --cap-drop ALL --security-opt no-new-privileges --tmpfs /tmp -e PUBLIC_ORIGIN=http://localhost:8100 -e TRUSTED_PROXY_IPS= -p 127.0.0.1:8100:3000 "boxgame:$REVISION"
+          for attempt in $(seq 1 30); do
+            if curl -fsS http://127.0.0.1:8100/api/health > /dev/null; then exit 0; fi
+            sleep 1
+          done
+          exit 1
+      - name: Package deployment
+        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+        env:
+          REVISION: ${{ github.sha }}
+        run: |
+          mkdir -p release/scripts
+          docker save "boxgame:$REVISION" | gzip > release/image.tar.gz
+          cp compose.yml release/compose.yml
+          cp scripts/deploy-image.sh release/scripts/deploy-image.sh
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+        with:
+          name: boxgame-release
+          path: release/
+          retention-days: 7
+          compression-level: 0
+  publish:
+    name: Publish verified Docker release
+    needs: verify
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    timeout-minutes: 15
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: boxgame-release
+          path: release
+      - name: Publish immutable release for the Linux updater
+        env:
+          REVISION: ${{ github.sha }}
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          tag="boxgame-$REVISION"
+          if gh release view "$tag" > /dev/null 2>&1; then
+            echo 'This commit already has a release.'
+            exit 0
+          fi
+          tar -czf boxgame-release.tar.gz -C release .
+          sha256sum boxgame-release.tar.gz > boxgame-release.sha256
+          gh release create "$tag" boxgame-release.tar.gz boxgame-release.sha256 --target "$REVISION" --title "Boxgame ${REVISION:0:7}" --notes 'Verified production image. The Linux updater deploys this release only while it matches main, then checks health and restores the previous image on failure.'

@@ -1,0 +1,28 @@
+name: boxgame-updater
+services:
+  updater:
+    build:
+      context: .
+      dockerfile: deploy/updater/Dockerfile
+    image: boxgame-updater:local
+    container_name: boxgame-updater
+    restart: unless-stopped
+    init: true
+    volumes:
+      - updater-state:/state
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      PUBLIC_ORIGIN: https://boxgame.jrhtechservices.party
+      TRUSTED_PROXY_IPS: ""
+      TRUST_CF_CONNECTING_IP: "false"
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    mem_limit: 512m
+    pids_limit: 128
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+volumes:
+  updater-state:

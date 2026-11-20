@@ -1,0 +1,10 @@
+.git
+.env
+.env.*
+node_modules
+dist
+deploy-runner-state
+test-results
+coverage
+docs
+.github
