@@ -193,6 +193,7 @@ function App() {
     const connect = async () => {
       setConnected(true);
       setReady(false);
+      setError("");
       const current = sessionRef.current;
       if (current) {
         try {
@@ -214,6 +215,9 @@ function App() {
       setConnected(false);
       setReady(false);
     };
+    const connectionError = () => {
+      setError("Couldn’t connect to the game server. Retrying…");
+    };
     const state = (view: RoomView) => {
       setRoom((prev) =>
         prev?.id === view.id && prev.revision > view.revision ? prev : view,
@@ -234,6 +238,7 @@ function App() {
     };
     socket
       .on("connect", connect)
+      .on("connect_error", connectionError)
       .on("disconnect", disconnect)
       .on("room:state", state)
       .on("room:closed", closed);
@@ -241,6 +246,7 @@ function App() {
     return () => {
       socket
         .off("connect", connect)
+        .off("connect_error", connectionError)
         .off("disconnect", disconnect)
         .off("room:state", state)
         .off("room:closed", closed);

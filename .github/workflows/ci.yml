@@ -35,14 +35,14 @@ jobs:
         env:
           REVISION: ${{ github.sha }}
         run: |
-          docker run -d --name boxgame-ci --read-only --cap-drop ALL --security-opt no-new-privileges --tmpfs /tmp -e PUBLIC_ORIGIN=http://localhost:8100 -e TRUSTED_PROXY_IPS= -p 127.0.0.1:8100:3000 "boxgame:$REVISION"
+          docker run -d --name boxgame-ci --read-only --cap-drop ALL --security-opt no-new-privileges --tmpfs /tmp -e PUBLIC_ORIGIN=http://127.0.0.1:8100 -e TRUSTED_PROXY_IPS= -p 127.0.0.1:8100:3000 "boxgame:$REVISION"
           ready=false
           for attempt in $(seq 1 30); do
             if curl -fsS http://127.0.0.1:8100/api/health > /dev/null; then ready=true; break; fi
             sleep 1
           done
           test "$ready" = true
-          node scripts/smoke.mjs http://127.0.0.1:8100 http://localhost:8100 "$REVISION"
+          node scripts/smoke.mjs http://127.0.0.1:8100 http://127.0.0.1:8100 "$REVISION"
       - name: Package deployment
         if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
         env:

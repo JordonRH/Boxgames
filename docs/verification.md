@@ -15,6 +15,14 @@ The 100-room/900-client load exercise uses a disposable in-process server. Simul
 
 No browser surfaces or in-app browser were available in the build session. No claim of visual screenshot, real-phone, screen-reader, QR camera, or public-hostname verification is made. The responsive interface is implemented and compiled; a real-device acceptance pass remains required after the operator connects the hostname.
 
+## Browser room-creation regression
+
+After the public route came online, room creation was unavailable in a normal browser. The initial polling GET was rejected with 403 because the handshake required an `Origin` header. Same-origin GET requests may omit it ([MDN Origin reference](https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Origin)). The earlier WebSocket-only smoke test supplied Origin and missed this path.
+
+The handshake now permits originless **polling only** on explicitly allowed hosts, rejects cross-site Fetch Metadata, and keeps explicit Origin checks strict. Plain-HTTP LAN clients without Fetch Metadata can also use same-host polling. Originless WebSocket handshakes remain rejected. Client connection failures now display a retry message.
+
+Two new regression tests cover the header policy and real polling-based room creation (13 tests total). The production-image smoke test now alternates polling controllers without Origin and WebSocket controllers, and plays a round through both transports.
+
 ## Measured final-engine sample — 20 November 2026
 
 100 rooms / 900 connections, repeatedly playing games for 122 seconds: 28,172 commands, **zero failures**, 6 ms p95 acknowledgement, 22 ms p95 event-loop delay. Combined server-and-client process peaked at 286 MiB RSS / 135 MiB heap. Outbound projected payload averaged 32.12 Mbps under deliberately fast rounds, so the full internet target now budgets 50 Mbps upload. This is a local synthetic result, not a measurement through the public hostname or under container resource limits.

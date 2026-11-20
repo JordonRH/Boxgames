@@ -25,18 +25,27 @@ async function command(s, event, payload) {
   );
 }
 async function connect() {
+  // Alternate normal browser polling (no Origin on same-origin GET) and WebSockets.
+  const polling = sockets.length % 2 === 0;
   const s = io(base, {
     forceNew: true,
     reconnection: false,
-    transports: ["websocket"],
-    extraHeaders: { Origin: origin },
+    transports: polling ? ["polling"] : ["websocket"],
+    upgrade: false,
+    extraHeaders: polling
+      ? { "Sec-Fetch-Site": "same-origin" }
+      : { Origin: origin },
   });
   sockets.push(s);
   s.on("room:state", (v) => states.set(s, v));
   await new Promise((resolve, reject) => {
     s.once("connect", resolve);
     s.once("connect_error", () =>
-      reject(new Error("Smoke-test browser origin was refused")),
+      reject(
+        new Error(
+          `Smoke-test ${polling ? "polling" : "WebSocket"} handshake was refused`,
+        ),
+      ),
     );
   });
   return s;
@@ -111,6 +120,7 @@ try {
       players: 3,
       roundScore: 5,
       privateViews: true,
+      transports: ["polling", "websocket"],
     }),
   );
 } finally {

@@ -1,11 +1,12 @@
 import express from "express";
-import { createServer } from "node:http";
+import { createServer, type Server as HttpServer } from "node:http";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
 import { Server } from "socket.io";
 import { BlockList } from "node:net";
 import { RoomManager, Limiter, type Config } from "./rooms/manager.js";
 import type { GameFactory } from "./games/registry.js";
+import { handshakePolicy } from "./handshake.js";
 
 function int(
   value: string | undefined,
@@ -46,6 +47,7 @@ export function createApp(
     trustedProxies?: string[];
     forwarded?: boolean;
     games?: Map<string, GameFactory>;
+    httpServer?: HttpServer;
   } = {},
 ) {
   const publicUrl = new URL(config.origin ?? "http://localhost:5173");
@@ -92,8 +94,12 @@ export function createApp(
   };
   const allowed = new Set([
     origin,
-    ...(process.env.ALLOWED_ORIGINS ?? "").split(",").filter(Boolean),
+    ...(process.env.ALLOWED_ORIGINS ?? "")
+      .split(",")
+      .map((value) => value.trim())
+      .filter(Boolean),
   ]);
+  const acceptsHandshake = handshakePolicy(allowed);
   app.use((_req, res, next) => {
     res.set({
       "Content-Security-Policy":
@@ -122,7 +128,8 @@ export function createApp(
       revision: process.env.APP_REVISION ?? "local",
     }),
   );
-  const http = createServer(app);
+  const http = options.httpServer ?? createServer();
+  http.on("request", app);
   const full: Config = {
     maxRooms: 100,
     maxConnections: 1000,
@@ -138,12 +145,9 @@ export function createApp(
     cors: { origin: [...allowed] },
     allowRequest: (req, callback) => {
       const net = identity(req);
-      const validOrigin =
-        typeof req.headers.origin === "string" &&
-        allowed.has(req.headers.origin);
       callback(
         null,
-        validOrigin &&
+        acceptsHandshake(req) &&
           io.engine.clientsCount < full.maxConnections &&
           (netCounts.get(net) ?? 0) < full.connectionsPerNetwork &&
           limits.take(`connect:${net}`, 120, 60000),
