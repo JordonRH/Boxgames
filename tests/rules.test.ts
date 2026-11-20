@@ -14,8 +14,8 @@ import { Limiter, RoomManager } from "../server/rooms/manager.js";
 import { Server } from "socket.io";
 
 test("original deck has enough distinct complete scenarios and no repeats in one game", () => {
-  assert.equal(scenarios.length, 18);
-  assert.equal(new Set(scenarios.map((s) => s.id)).size, 18);
+  assert.equal(scenarios.length, 30);
+  assert.equal(new Set(scenarios.map((s) => s.id)).size, 30);
   for (const s of scenarios) {
     assert.equal(s.projects.length, 3);
     assert.ok(s.projects.every((p) => p.name && p.description));

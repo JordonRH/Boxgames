@@ -127,7 +127,14 @@ test("complete six-round game: isolation, private views, retries, stale clients,
     assert.equal(states.get(host)!.private, null);
     assert.equal(states.get(players[1])!.private!.allocation, null);
     assert.equal(states.get(host)!.game!.result, null);
-    assert.equal(JSON.stringify(states.get(host)).includes("forecast"), false);
+    const containsKey = (value: unknown, key: string): boolean =>
+      !!value &&
+      typeof value === "object" &&
+      Object.entries(value).some(
+        ([name, child]) => name === key || containsKey(child, key),
+      );
+    assert.equal(containsKey(states.get(host)!.game, "forecast"), false);
+    assert.equal(containsKey(states.get(host)!.game, "allocation"), false);
     players[0].disconnect();
     await waitFor(() => states.get(host)!.game!.paused);
     const resumed = await connect();

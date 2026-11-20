@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { randomUUID } from "node:crypto";
 import type { KnowledgeRow, RoomView } from "../../shared/types.js";
-import { GameError } from "./core.js";
+import { GameError, type GameOptions } from "./core.js";
 import { SimpleGame } from "./simple-base.js";
 import { oddWords } from "./knowledge-content.js";
 import { scenario } from "./knowledge-base.js";
@@ -17,15 +17,18 @@ interface Option {
   truth: boolean;
 }
 export class BluffGame extends SimpleGame {
-  private deck = this.mixed(oddWords).slice(0, 5);
+  private deck = this.reserve("odd words", oddWords, 5, (w) => w.term);
   private texts = new Map<string, string>();
   private pairs = new Map<string, Option[]>();
   private votes = new Map<string, string>();
   private options: Option[] = [];
   private rows: KnowledgeRow[] = [];
   private skipped = false;
-  constructor(players: { id: string; name: string }[]) {
-    super(players, 5);
+  constructor(
+    players: { id: string; name: string }[],
+    options: GameOptions = {},
+  ) {
+    super(players, 5, options);
   }
   private get word() {
     return this.deck[this.round - 1];
@@ -169,7 +172,12 @@ export class BluffGame extends SimpleGame {
       }
       this.rows = [...points].map(([id, points]) => {
         this.award(id, points);
-        return { id, points };
+        const truthPoints = this.options.find(
+          (o) => o.id === this.votes.get(id),
+        )?.truth
+          ? 2
+          : 0;
+        return { id, points, truthPoints, bluffPoints: points - truthPoints };
       });
       this.phase = "reveal";
     }

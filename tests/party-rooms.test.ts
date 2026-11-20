@@ -113,6 +113,7 @@ for (const gameKey of [
         }
       }
       await pause(1100);
+      await must(host, "host:settings", { carryScores: true });
       await must(host, "host:game", { gameKey });
       assert.equal(states.get(host)!.selectedGame, gameKey);
       assert.equal(
@@ -267,6 +268,44 @@ for (const gameKey of [
         await until(() => !states.get(host)!.game!.paused);
         assert.ok(states.get(next.socket)!.private!.charades!.wordId);
       }
+      await pause(1100);
+      await must(host, "game:end", cmd(host));
+      const finishedId = states.get(host)!.game!.id;
+      const totals = states
+        .get(host)!
+        .standings!.map((p) => ({
+          id: p.id,
+          points: p.points,
+          games: p.games,
+        }));
+      const replayCommand = cmd(host);
+      assert.equal(
+        (await request(others[0].socket, "game:rematch", cmd(others[0].socket)))
+          .ok,
+        false,
+      );
+      await must(host, "game:rematch", replayCommand);
+      assert.notEqual(states.get(host)!.game!.id, finishedId);
+      assert.equal(states.get(host)!.game!.phase, "instructions");
+      assert.equal(states.get(host)!.playerId, hostId);
+      assert.equal(states.get(host)!.settings!.carryScores, true);
+      assert.deepEqual(
+        states
+          .get(host)!
+          .standings!.map((p) => ({
+            id: p.id,
+            points: p.points,
+            games: p.games,
+          })),
+        totals,
+      );
+      const rematchId = states.get(host)!.game!.id;
+      await must(host, "game:rematch", replayCommand);
+      assert.equal(
+        states.get(host)!.game!.id,
+        rematchId,
+        "retry must not create another game",
+      );
       await pause(1100);
       await must(host, "game:end", cmd(host));
       await must(host, "game:advance", cmd(host));

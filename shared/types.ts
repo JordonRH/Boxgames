@@ -1,3 +1,4 @@
+import type { PartySettings } from "./settings.js";
 export type Triple = [number, number, number];
 export type Rank = "largest" | "middle" | "smallest";
 export type Phase = "instructions" | "allocate" | "vote" | "reveal" | "final";
@@ -45,8 +46,14 @@ export interface KnowledgeRow {
   points: number;
   quiz?: boolean;
   repair?: boolean;
+  chargeBefore?: number;
+  chargeAfter?: number;
+  truthPoints?: number;
+  bluffPoints?: number;
 }
 export interface GameView {
+  waitingFor?: string[];
+  notice?: string | null;
   gameKey?: string;
   id: string;
   phaseId: string;
@@ -62,17 +69,20 @@ export interface GameView {
   eligible: number;
   result: RoundResult | null;
   survival?: {
-    difficulty: "medium" | "hard";
+    difficulty: "casual" | "medium" | "hard";
     category: string;
     question: string;
     options: KnowledgeOption[];
     charge: { id: string; charge: number }[];
     answers: {
+      quizQuestion?: string;
+      repairQuestion?: string;
       quiz: string;
       repair: string;
       explanation: string;
       source: string;
     } | null;
+    feedback?: { reason: string; count: number }[];
     rows: KnowledgeRow[];
   };
   bluff?: {
@@ -99,6 +109,11 @@ export interface GameView {
     message: string | null;
   };
   charades?: {
+    teams?: { name: string; ids: string[]; score: number; turns: number }[];
+    activeTeam?: number;
+    target?: number;
+    outcome?: string | null;
+    canMark?: boolean;
     guesserId: string;
     guesserName: string;
     category: string | null;
@@ -128,6 +143,9 @@ export interface RoomView {
   hostConnected: boolean;
   players: PlayerView[];
   pending: { id: string; name: string }[];
+  settings?: PartySettings;
+  standings?: { id: string; name: string; points: number; games: number }[];
+  contentUsed?: number;
   selectedGame: string;
   games: GameSummary[];
   game: GameView | null;
@@ -137,7 +155,11 @@ export interface RoomView {
     forecast?: number | null;
     vote?: number | null;
     submitted: boolean;
-    survival?: { choice: string | null; atRisk: boolean | null };
+    survival?: {
+      choice: string | null;
+      atRisk: boolean | null;
+      feedback?: string | null;
+    };
     bluff?: {
       text: string | null;
       options: KnowledgeOption[];
@@ -148,11 +170,14 @@ export interface RoomView {
       hand: { id: string; text: string }[];
       isJudge: boolean;
       playedId: string | null;
+      refreshUsed?: boolean;
     };
     charades?: {
       word: string | null;
       wordId: string | null;
       isGuesser: boolean;
+      canMark?: boolean;
+      canPass?: boolean;
     };
   } | null;
   joinUrl: string;

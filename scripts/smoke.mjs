@@ -102,6 +102,8 @@ try {
     await until(() => states.get(host).pending.length === 1);
     await command(host, "host:admit", { id: states.get(host).pending[0].id });
   }
+  await sleep(1100);
+  await command(host, "host:settings", { carryScores: true });
   for (const gameKey of [
     "blank-slate",
     "crowd-pick",
@@ -209,10 +211,66 @@ try {
         2,
       );
     }
+    await sleep(1100);
+    await command(host, "game:end", envelope(host));
+    const oldGame = states.get(host).game.id;
+    const previousTotals = states
+      .get(host)
+      .standings.map((p) => ({ id: p.id, points: p.points, games: p.games }));
+    await command(host, "game:rematch", envelope(host));
+    assert.notEqual(states.get(host).game.id, oldGame);
+    assert.equal(states.get(host).game.phase, "instructions");
+    assert.equal(states.get(host).playerId, hostId);
+    assert.deepEqual(
+      states
+        .get(host)
+        .standings.map((p) => ({ id: p.id, points: p.points, games: p.games })),
+      previousTotals,
+    );
+    await sleep(1100);
     await command(host, "game:end", envelope(host));
     await command(host, "game:advance", envelope(host));
     await until(() => states.get(host).game === null);
   }
+  // A complete two-team game: active helpers only, equal turns, then fresh replay.
+  await sleep(1100);
+  await command(host, "host:settings", { clueMode: "teams", teamTarget: 5 });
+  await command(host, "game:start", {
+    commandId: randomUUID(),
+    gameKey: "clue-crew",
+  });
+  await command(host, "game:advance", envelope(host));
+  await command(host, "game:submit", { ...envelope(host), action: "ready" });
+  await until(() => players.every((p) => states.get(p).game.phase === "vote"));
+  const helper = players[1],
+    opponent = players[0];
+  assert.ok(states.get(helper).private.charades.word);
+  assert.equal(states.get(host).private.charades.word, null);
+  assert.equal(states.get(opponent).private.charades.word, null);
+  for (let i = 0; i < 5; i++)
+    await command(helper, "game:submit", {
+      ...envelope(helper),
+      action: "correct",
+      wordId: states.get(helper).private.charades.wordId,
+    });
+  await sleep(1100);
+  await command(host, "game:advance", envelope(host));
+  assert.equal(states.get(host).game.charades.outcome, null);
+  await command(host, "game:advance", envelope(host));
+  await until(() => states.get(opponent).game.phase === "allocate");
+  await command(opponent, "game:submit", {
+    ...envelope(opponent),
+    action: "ready",
+  });
+  await until(() => states.get(host).game.phase === "vote");
+  await command(host, "game:advance", envelope(host));
+  assert.match(states.get(host).game.charades.outcome, /Team Lime wins/);
+  assert.deepEqual(
+    states.get(host).game.charades.teams.map((t) => t.turns),
+    [1, 1],
+  );
+  await command(host, "game:advance", envelope(host));
+  assert.equal(states.get(host).game.phase, "final");
   await command(host, "room:close", {});
   host = null;
   console.log(
@@ -228,6 +286,9 @@ try {
         "blackout-run",
         "false-front",
       ],
+      rematches: true,
+      sessionScores: true,
+      teams: true,
       hostPlayer: true,
       privateViews: true,
       transports: ["polling", "websocket"],

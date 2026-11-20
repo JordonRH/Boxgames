@@ -43,6 +43,7 @@ import type {
 import "./style.css";
 import "./party.css";
 import { PartyGame, type PartyProps } from "./party-games.js";
+import { RoomOptions, SessionScores } from "./room-options.js";
 import { games as catalogue } from "../shared/games.js";
 
 const socket = io({ autoConnect: false });
@@ -874,6 +875,10 @@ function Room({
   const available = room.games?.length ? room.games : catalogue;
   const selected =
     available.find((g) => g.id === room.selectedGame) ?? available[0];
+  const minimum =
+    selected.id === "clue-crew" && room.settings?.clueMode === "teams"
+      ? 4
+      : selected.minPlayers;
   const [qr, setQr] = useState(""),
     [copied, setCopied] = useState(false);
   useEffect(() => {
@@ -933,6 +938,15 @@ function Room({
           <br />
           Keep this tab open. Your controller will appear here.
         </p>
+        {selected.id === "clue-crew" && room.settings?.clueMode === "teams" && (
+          <p className="pill">
+            {room.settings.teams[room.playerId!] === 1
+              ? "Team Coral"
+              : "Team Lime"}{" "}
+            · target {room.settings.teamTarget} points
+          </p>
+        )}
+        <SessionScores room={room} />
         <div className="player-lobby-game">
           <Box size={30} />
           <div>
@@ -1145,6 +1159,7 @@ function Room({
             </div>
             <p className="picked-description">{selected.description}</p>
           </section>
+          <RoomOptions room={room} busy={busy} action={action} />
           <div className="timing">
             <label htmlFor="timing">
               <Settings2 size={16} /> Pace
@@ -1167,19 +1182,19 @@ function Room({
           </div>
           <button
             className="button primary large full"
-            disabled={busy || connected < selected.minPlayers}
+            disabled={busy || connected < minimum}
             onClick={() =>
               action("game:start", { commandId: uid(), gameKey: selected.id })
             }
           >
             <Play size={20} />
-            {connected < selected.minPlayers
-              ? `${selected.minPlayers - connected} more ${selected.minPlayers - connected === 1 ? "player" : "players"} to go`
+            {connected < minimum
+              ? `${minimum - connected} more ${minimum - connected === 1 ? "player" : "players"} to go`
               : `Start ${selected.title}`}
           </button>
           <p className="form-note">
-            {connected < selected.minPlayers
-              ? `Needs ${selected.minPlayers} players. The host counts if you join yourself.`
+            {connected < minimum
+              ? `Needs ${minimum} players. The host counts if you join yourself.`
               : "A quick how-to appears before the first round."}
           </p>
         </aside>

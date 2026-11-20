@@ -1,5 +1,7 @@
 import { createHash, randomBytes, randomInt, randomUUID } from "node:crypto";
 import { z } from "zod";
+import { defaultSettings, type PartySettings } from "../../shared/settings.js";
+import type { ContentHistory } from "../games/history.js";
 import { defaultGame } from "../../shared/games.js";
 import type { Server, Socket } from "socket.io";
 import type {
@@ -73,6 +75,10 @@ export interface Room {
   pending: Map<string, Pending>;
   game: GameEngine | null;
   selectedGame: string;
+  settings: PartySettings;
+  contentHistory: ContentHistory;
+  standings: Map<string, { points: number; games: number }>;
+  settledGame: string | null;
   hostPlayerId: string | null;
   minimum: number;
   duration: number;
@@ -218,6 +224,10 @@ export class RoomManager {
           pending: new Map(),
           game: null,
           selectedGame: defaultGame,
+          settings: defaultSettings(),
+          contentHistory: new Map(),
+          standings: new Map(),
+          settledGame: null,
           hostPlayerId: null,
           minimum: 3,
           duration: 45,
@@ -467,19 +477,53 @@ export class RoomManager {
       "host:settings",
       z
         .object({
-          duration: z.union([z.literal(45), z.literal(90), z.literal(0)]),
+          duration: z
+            .union([z.literal(45), z.literal(90), z.literal(0)])
+            .optional(),
+          difficulty: z.enum(["casual", "mixed", "hard"]).optional(),
+          clueMode: z.enum(["solo", "teams"]).optional(),
+          teamTarget: z.number().int().min(5).max(30).optional(),
+          carryScores: z.boolean().optional(),
+          teams: z
+            .record(z.string().uuid(), z.union([z.literal(0), z.literal(1)]))
+            .refine((teams) => Object.keys(teams).length <= 8)
+            .optional(),
         })
         .strict(),
-      ({ duration }) => {
+      ({ duration, ...settings }) => {
         const room = this.host(socket);
         if (room.game)
-          throw new Fault("game_active", "Change timing in the lobby.");
-        room.duration = duration;
+          throw new Fault("game_active", "Change settings in the lobby.");
+        if (
+          settings.teams &&
+          Object.keys(settings.teams).some((id) => !room.players.has(id))
+        )
+          throw new Fault("invalid_teams", "Choose players from this room.");
+        if (duration !== undefined) room.duration = duration;
+        room.settings = { ...room.settings, ...settings };
         room.activity = this.clock();
         this.broadcast(room);
         return {};
       },
     );
+    on("host:reset-content", z.object({}).strict(), () => {
+      const room = this.host(socket);
+      if (room.game)
+        throw new Fault("game_active", "Reset used content in the lobby.");
+      room.contentHistory.clear();
+      room.activity = this.clock();
+      this.broadcast(room);
+      return {};
+    });
+    on("host:reset-scores", z.object({}).strict(), () => {
+      const room = this.host(socket);
+      if (room.game)
+        throw new Fault("game_active", "Reset session scores in the lobby.");
+      room.standings.clear();
+      room.activity = this.clock();
+      this.broadcast(room);
+      return {};
+    });
     on(
       "host:game",
       z.object({ gameKey: z.string().max(40) }).strict(),
@@ -543,35 +587,34 @@ export class RoomManager {
       ({ commandId, gameKey }) => {
         const room = this.host(socket);
         if (room.receipts.has(commandId)) return room.receipts.get(commandId);
-        if (room.game)
-          throw new Fault("game_active", "This game has already started.");
-        const players = [...room.players.values()].filter((p) => p.socketId);
-        const chosen = gameKey ?? room.selectedGame;
-        const factory = this.games.get(chosen);
-        if (!factory)
-          throw new Fault("unknown_game", "That game is unavailable.");
-        if (players.length < factory.minPlayers)
-          throw new Fault(
-            "not_enough_players",
-            `At least ${factory.minPlayers} connected players are needed.`,
-          );
-        for (const p of [...room.pending.values()])
-          this.remove(
-            room,
-            p.id,
-            "The game started before your request was accepted.",
-          );
-        room.selectedGame = chosen;
-        room.game = factory.create(players);
-        room.minimum = factory.minPlayers;
-        room.removed.clear();
-        room.activity = this.clock();
-        room.manualPause = false;
-        room.pauseReason = null;
+        this.startGame(room, gameKey ?? room.selectedGame);
         this.remember(room, commandId, {});
         this.broadcast(room);
         return {};
       },
+    );
+    on("game:rematch", command.strict(), (data) =>
+      this.act(socket, data, (room) => {
+        this.host(socket);
+        this.startGame(room, room.selectedGame, true);
+      }),
+    );
+    on(
+      "game:feedback",
+      command
+        .extend({
+          reason: z.enum(["too_easy", "too_hard", "ambiguous", "incorrect"]),
+        })
+        .strict(),
+      (data) =>
+        this.act(socket, data, (room) => {
+          if (!room.game?.feedback)
+            throw new Fault(
+              "wrong_game",
+              "Feedback is available on trivia reveals.",
+            );
+          room.game.feedback(socket.data.playerId, data.reason);
+        }),
     );
     for (const [event, action] of [
       ["game:submit", "submit"],
@@ -633,6 +676,8 @@ export class RoomManager {
               `At least ${room.minimum} connected players are needed.`,
             );
           if (g.advance() === "lobby") {
+            this.settle(room);
+            room.removed.clear();
             room.game = null;
             room.deadline = null;
             room.remaining = null;
@@ -749,6 +794,72 @@ export class RoomManager {
     if (room.receipts.size > 512)
       room.receipts.delete(room.receipts.keys().next().value!);
   }
+  private settingsView(room: Room): PartySettings {
+    return {
+      ...room.settings,
+      teams: Object.fromEntries(
+        [...room.players.keys()].map((id, index) => [
+          id,
+          room.settings.teams[id] ?? index % 2,
+        ]),
+      ),
+    };
+  }
+  private settle(room: Room) {
+    const g = room.game;
+    if (!g?.final || room.settledGame === g.id) return;
+    if (room.settings.carryScores)
+      for (const id of room.players.keys())
+        if (g.hasPlayer(id)) {
+          const old = room.standings.get(id) ?? { points: 0, games: 0 };
+          room.standings.set(id, {
+            points: old.points + g.score(id),
+            games: old.games + 1,
+          });
+        }
+    room.settledGame = g.id;
+  }
+  private startGame(room: Room, chosen: string, rematch = false) {
+    if (room.game && (!rematch || !room.game.final))
+      throw new Fault("game_active", "Finish the current game first.");
+    if (rematch && !room.game?.final)
+      throw new Fault("wrong_phase", "Finish this game before a rematch.");
+    const factory = this.games.get(chosen);
+    if (!factory) throw new Fault("unknown_game", "That game is unavailable.");
+    const settings = this.settingsView(room),
+      players = [...room.players.values()].filter((p) => p.socketId);
+    const minimum =
+      chosen === "clue-crew" && settings.clueMode === "teams"
+        ? 4
+        : factory.minPlayers;
+    if (players.length < minimum)
+      throw new Fault(
+        "not_enough_players",
+        `At least ${minimum} connected players are needed.`,
+      );
+    // Failed creation never burns content or discards the completed game.
+    const history = new Map(
+      [...room.contentHistory].map(([key, seen]) => [key, new Set(seen)]),
+    );
+    const game = factory.create(players, { history, settings });
+    this.settle(room);
+    for (const p of [...room.pending.values()])
+      this.remove(
+        room,
+        p.id,
+        "The game started before your request was accepted.",
+      );
+    room.contentHistory = history;
+    room.game = game;
+    room.selectedGame = chosen;
+    room.minimum = minimum;
+    room.removed.clear();
+    room.deadline = null;
+    room.remaining = null;
+    room.manualPause = false;
+    room.pauseReason = null;
+    room.activity = this.clock();
+  }
   private connected(room: Room) {
     return [...room.players.values()].filter(
       (p) => p.socketId && (!room.game || room.game.hasPlayer(p.id)),
@@ -767,15 +878,20 @@ export class RoomManager {
     const missingRequired = room.game
       .requiredPlayers?.()
       .some((id) => !room.players.get(id)?.socketId);
+    const teamIssue = room.game.connectionIssue?.(
+      [...room.players.values()].filter((p) => p.socketId).map((p) => p.id),
+    );
     const reason = !room.hostSocket
       ? "Waiting for the host to reconnect"
       : this.connected(room) < room.minimum
         ? `Waiting for at least ${room.minimum} connected players`
-        : missingRequired
-          ? "Waiting for this turn’s player to reconnect"
-          : room.manualPause
-            ? "Paused by the host"
-            : null;
+        : teamIssue
+          ? teamIssue
+          : missingRequired
+            ? "Waiting for this turn’s player to reconnect"
+            : room.manualPause
+              ? "Paused by the host"
+              : null;
     if (reason && !room.pauseReason) {
       room.remaining =
         room.deadline === null
@@ -807,6 +923,8 @@ export class RoomManager {
     }
     room.pending.delete(pId);
     room.players.delete(pId);
+    room.standings.delete(pId);
+    delete room.settings.teams[pId];
     room.actorBudgets.delete(pId);
     const g = room.game;
     if (g) {
@@ -878,6 +996,28 @@ export class RoomManager {
                 score,
               })),
             ],
+      settings: role === "pending" ? undefined : this.settingsView(room),
+      contentUsed:
+        role === "host"
+          ? [...room.contentHistory.values()].reduce(
+              (n, seen) => n + seen.size,
+              0,
+            )
+          : undefined,
+      standings:
+        role === "pending" || !room.settings.carryScores
+          ? []
+          : [...room.players.values()].map((p) => {
+              const old = room.standings.get(p.id) ?? { points: 0, games: 0 };
+              const current =
+                g && room.settledGame !== g.id && g.hasPlayer(p.id);
+              return {
+                id: p.id,
+                name: p.name,
+                points: old.points + (current ? g.score(p.id) : 0),
+                games: old.games + (current && g.final ? 1 : 0),
+              };
+            }),
       selectedGame: room.selectedGame,
       games: [...this.games.values()].flatMap((factory) =>
         factory.metadata && !factory.metadata.hidden ? [factory.metadata] : [],
@@ -890,6 +1030,12 @@ export class RoomManager {
         g && role !== "pending"
           ? {
               ...g.publicView(),
+              waitingFor: !g.input
+                ? []
+                : (g.waitingPlayers?.() ??
+                  [...room.players.keys()].filter(
+                    (id) => g.hasPlayer(id) && !g.privateView(id)?.submitted,
+                  )),
               deadline: room.deadline,
               remainingMs: room.remaining,
               paused: !!room.pauseReason,

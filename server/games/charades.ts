@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { z } from "zod";
-import { GameError } from "./core.js";
+import { GameError, type GameOptions } from "./core.js";
 import { SimpleGame } from "./simple-base.js";
 import { clueCards } from "./party-content.js";
 import type { RoomView, Scenario } from "../../shared/types.js";
@@ -9,7 +9,14 @@ export class CharadesGame extends SimpleGame {
   private done = new Set<string>();
   private guesser: string;
   private guesserName: string;
-  private deck = this.mixed(clueCards);
+  private deck = this.mixed(
+    this.unused("clue words", clueCards, (c) => c.word),
+  );
+  private teams:
+    { name: string; ids: string[]; score: number; turns: number }[] | null =
+    null;
+  private target = 15;
+  private outcome: string | null = null;
   private word = "";
   private category: string | null = null;
   private wordId = randomUUID();
@@ -17,13 +24,45 @@ export class CharadesGame extends SimpleGame {
   private correct = 0;
   private passed = 0;
   private history: { word: string; correct: boolean }[] = [];
-  constructor(players: { id: string; name: string }[]) {
-    super(players, players.length);
+  constructor(
+    players: { id: string; name: string }[],
+    options: GameOptions = {},
+  ) {
+    super(players, players.length, options);
     this.order = players.map((p) => p.id);
-    this.guesser = this.order[0];
-    this.guesserName = players[0].name;
+    if (!this.deck.length)
+      throw new GameError(
+        "content_exhausted",
+        "All clue words have been used. Reset used content in the lobby.",
+      );
+    if (options.settings?.clueMode === "teams") {
+      this.target = options.settings.teamTarget;
+      this.teams = ["Team Lime", "Team Coral"].map((name, team) => ({
+        name,
+        ids: players
+          .filter(
+            (p, index) => (options.settings!.teams[p.id] ?? index % 2) === team,
+          )
+          .map((p) => p.id),
+        score: 0,
+        turns: 0,
+      }));
+      if (players.length < 4 || this.teams.some((t) => t.ids.length < 2))
+        throw new GameError(
+          "invalid_teams",
+          "Team mode needs at least two players on each team.",
+        );
+      this.rounds = 12;
+    }
+    this.guesser = this.teams?.[0].ids[0] ?? this.order[0];
+    this.guesserName = this.players.get(this.guesser)!.name;
   }
   private next() {
+    if (this.teams) {
+      if (this.outcome) return undefined;
+      const next = this.teams[this.round % 2];
+      return next.ids[next.turns % next.ids.length];
+    }
     return this.order.find((id) => this.hasPlayer(id) && !this.done.has(id));
   }
   get advancesToInput() {
@@ -32,15 +71,27 @@ export class CharadesGame extends SimpleGame {
       (this.phase === "reveal" && this.next() !== undefined)
     );
   }
+  waitingPlayers() {
+    return this.phase === "allocate" ? [this.guesser] : [];
+  }
+  connectionIssue(connected: string[]) {
+    return this.teams?.some(
+      (team) => team.ids.filter((id) => connected.includes(id)).length < 2,
+    )
+      ? "Waiting for two connected players on each team"
+      : null;
+  }
   requiredPlayers() {
     return this.input ? [this.guesser] : [];
   }
   private draw() {
-    if (!this.deck.length) this.deck = this.mixed(clueCards);
+    if (!this.deck.length) return false;
     const card = this.deck.pop()!;
+    this.seen("clue words", card.word);
     this.word = card.word;
     this.category = card.category;
     this.wordId = randomUUID();
+    return true;
   }
   duration(base: number) {
     return this.phase !== "vote" || base === 0
@@ -104,20 +155,52 @@ export class CharadesGame extends SimpleGame {
         "clue_giver_only",
         "A clue-giver marks correct guesses. You can still tap Pass.",
       );
+    if (this.teams && !this.teams[(this.round - 1) % 2].ids.includes(id))
+      throw new GameError(
+        "opponent_waits",
+        "The active team controls this turn.",
+      );
     const correct = p.data.action === "correct";
     this.history.push({ word: this.word, correct });
     if (correct) this.correct++;
     else this.passed++;
-    this.draw();
+    if (!this.draw()) {
+      this.finish();
+      this.notice =
+        "All clue words have been used. Completed guesses are scored; reset used content in the lobby for more.";
+      this.end();
+    }
   }
   private finish() {
-    this.award(this.guesser, this.correct);
+    if (this.hasPlayer(this.guesser)) this.award(this.guesser, this.correct);
     this.done.add(this.guesser);
+    if (this.teams) {
+      const active = this.teams[(this.round - 1) % 2];
+      active.score += this.correct;
+      active.turns++;
+      if (
+        this.teams[0].turns === this.teams[1].turns &&
+        ((Math.max(...this.teams.map((t) => t.score)) >= this.target &&
+          this.teams[0].score !== this.teams[1].score) ||
+          this.round >= this.rounds)
+      ) {
+        const [a, b] = this.teams;
+        this.outcome =
+          a.score === b.score
+            ? "Teams tied after equal turns."
+            : `${a.score > b.score ? a.name : b.name} wins!`;
+      }
+    }
     this.phase = "reveal";
   }
   complete(timeout: boolean) {
     if (this.phase === "allocate" && this.ready) {
-      this.draw();
+      if (!this.draw()) {
+        this.notice =
+          "All clue words have been used. Reset used content in the lobby.";
+        this.end();
+        return true;
+      }
       this.phase = "vote";
       return true;
     }
@@ -136,12 +219,22 @@ export class CharadesGame extends SimpleGame {
   remove(id: string) {
     super.remove(id);
     this.done.add(id);
+    if (this.teams) {
+      this.teams.forEach((t) => (t.ids = t.ids.filter((p) => p !== id)));
+      if (this.teams.some((t) => t.ids.length < 2)) {
+        this.notice =
+          "Team game ended because a team has fewer than two players. Completed-turn scores are kept.";
+        this.end();
+        return;
+      }
+    }
     if (id === this.guesser && this.input) {
       this.guesserName = "Player left";
       this.correct = 0;
       this.passed = 0;
       this.history = [];
-      this.phase = "reveal";
+      if (this.teams) this.finish();
+      else this.phase = "reveal";
     }
   }
   publicView() {
@@ -170,6 +263,10 @@ export class CharadesGame extends SimpleGame {
     return {
       ...this.shell("clue-crew", scenario, 0),
       charades: {
+        teams: this.teams ?? undefined,
+        activeTeam: this.teams ? (this.round - 1) % 2 : undefined,
+        target: this.teams ? this.target : undefined,
+        outcome: this.outcome,
         guesserId: this.guesser,
         guesserName: this.guesserName,
         ready: this.ready,
@@ -186,8 +283,22 @@ export class CharadesGame extends SimpleGame {
           submitted: false,
           charades: {
             word:
-              this.phase === "vote" && id !== this.guesser ? this.word : null,
-            wordId: this.phase === "vote" ? this.wordId : null,
+              this.phase === "vote" &&
+              id !== this.guesser &&
+              (!this.teams || this.teams[(this.round - 1) % 2].ids.includes(id))
+                ? this.word
+                : null,
+            wordId:
+              this.phase === "vote" &&
+              (!this.teams || this.teams[(this.round - 1) % 2].ids.includes(id))
+                ? this.wordId
+                : null,
+            canMark:
+              id !== this.guesser &&
+              (!this.teams ||
+                this.teams[(this.round - 1) % 2].ids.includes(id)),
+            canPass:
+              !this.teams || this.teams[(this.round - 1) % 2].ids.includes(id),
             isGuesser: id === this.guesser,
           },
         }

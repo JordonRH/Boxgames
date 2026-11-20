@@ -1,6 +1,6 @@
 import { z } from "zod";
 import type { KnowledgeRow, RoomView } from "../../shared/types.js";
-import { GameError } from "./core.js";
+import { GameError, type GameOptions } from "./core.js";
 import { SimpleGame } from "./simple-base.js";
 import { trivia, repairQuestion } from "./knowledge-content.js";
 import { questionOptions, scenario } from "./knowledge-base.js";
@@ -8,22 +8,62 @@ const choiceSchema = z.object({ optionId: z.string().uuid() }).strict();
 export class SurvivalGame extends SimpleGame {
   private deck = this.buildDeck();
   private buildDeck() {
-    const used = new Set<string>();
-    return (
-      ["medium", "medium", "medium", "hard", "hard", "hard"] as const
-    ).map((difficulty) => {
-      const q = this.mixed(
-        trivia.filter(
-          (q) => q.difficulty === difficulty && !used.has(q.category!),
+    const mode = this.context.settings?.difficulty ?? "mixed";
+    const levels =
+      mode === "mixed"
+        ? ["medium", "medium", "medium", "hard", "hard", "hard"]
+        : Array(6).fill(mode);
+    const fresh = this.unused("trivia", trivia, (q) => q.question);
+    const plan = (index: number, used: Set<string>): typeof trivia | null => {
+      if (index === 6) return [];
+      const subjects = this.mixed([
+        ...new Set(
+          fresh
+            .filter(
+              (q) => q.difficulty === levels[index] && !used.has(q.category!),
+            )
+            .map((q) => q.category!),
         ),
-      )[0];
-      used.add(q.category!);
-      return q;
-    });
+      ]);
+      for (const subject of subjects) {
+        const q = this.mixed(
+          fresh.filter(
+            (q) => q.category === subject && q.difficulty === levels[index],
+          ),
+        )[0];
+        const rest = plan(index + 1, new Set([...used, subject]));
+        if (rest) return [q, ...rest];
+      }
+      return null;
+    };
+    const deck = plan(0, new Set());
+    if (!deck)
+      throw new GameError(
+        "content_exhausted",
+        "Not enough fresh trivia subjects at this difficulty. Change difficulty or reset used content in the lobby.",
+      );
+    deck.forEach((q) => this.seen("trivia", q.question));
+    return deck;
   }
-  private repairs = this.mixed(Array.from({ length: 120 }, (_, seed) => seed))
-    .slice(0, 6)
-    .map(repairQuestion);
+  private repairs = this.reserve(
+    "repairs",
+    Array.from({ length: 120 }, (_, seed) => repairQuestion(seed)),
+    6,
+    (q) => q.question,
+  );
+  private reports = new Map<string, string>();
+  feedback(id: string, reason: string) {
+    if (this.phase !== "reveal" || !this.hasPlayer(id))
+      throw new GameError(
+        "wrong_phase",
+        "Give feedback during the answer reveal.",
+      );
+    if (!["too_easy", "too_hard", "ambiguous", "incorrect"].includes(reason))
+      throw new GameError("invalid_input", "Choose a feedback reason.");
+    if (this.reports.has(`${this.round}:${id}`))
+      throw new GameError("already_reported", "Your feedback is saved.");
+    this.reports.set(`${this.round}:${id}`, reason);
+  }
   private quizOptions = this.deck.map((q) => this.mixed(questionOptions(q)));
   private repairOptions = this.repairs.map((q) =>
     this.mixed(questionOptions(q)),
@@ -33,8 +73,11 @@ export class SurvivalGame extends SimpleGame {
   private charge = new Map<string, number>();
   private rows: KnowledgeRow[] = [];
   private bonus = false;
-  constructor(players: { id: string; name: string }[]) {
-    super(players, 6);
+  constructor(
+    players: { id: string; name: string }[],
+    options: GameOptions = {},
+  ) {
+    super(players, 6, options);
     players.forEach((p) => this.charge.set(p.id, 3));
   }
   private get index() {
@@ -91,7 +134,14 @@ export class SurvivalGame extends SimpleGame {
           Math.max(0, Math.min(3, before + (quiz ? 1 : repair ? 0 : -1))),
         );
         this.award(id, points);
-        return { id, quiz, repair, points };
+        return {
+          id,
+          quiz,
+          repair,
+          points,
+          chargeBefore: before,
+          chargeAfter: this.charge.get(id)!,
+        };
       });
       this.phase = "reveal";
     }
@@ -154,12 +204,25 @@ export class SurvivalGame extends SimpleGame {
         charge: [...this.charge].map(([id, charge]) => ({ id, charge })),
         answers: revealed
           ? {
+              quizQuestion: this.deck[this.index].question,
+              repairQuestion: this.repairs[this.index].question,
               quiz: this.deck[this.index].answer,
               repair: this.repairs[this.index].answer,
               explanation: `${this.deck[this.index].explanation} Repair: ${this.repairs[this.index].explanation}`,
               source: this.deck[this.index].source,
             }
           : null,
+        feedback: revealed
+          ? ["too_easy", "too_hard", "ambiguous", "incorrect"].map(
+              (reason) => ({
+                reason,
+                count: [...this.reports].filter(
+                  ([key, r]) =>
+                    key.startsWith(`${this.round}:`) && r === reason,
+                ).length,
+              }),
+            )
+          : [],
         rows: revealed ? this.rows : [],
       },
     };
@@ -172,6 +235,7 @@ export class SurvivalGame extends SimpleGame {
       submitted: choice !== null,
       survival: {
         choice,
+        feedback: this.reports.get(`${this.round}:${id}`) ?? null,
         atRisk: this.phase === "vote" ? !this.correct(id) : null,
       },
     };

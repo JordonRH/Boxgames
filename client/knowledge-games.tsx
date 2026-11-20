@@ -19,6 +19,11 @@ function RoundPoints({ rows, room }: { rows: KnowledgeRow[]; room: RoomView }) {
               ? `Trivia ${r.quiz ? "✓" : "missed"} · Repair ${r.repair ? "✓" : "missed"} · `
               : ""}
             +{r.points}
+            {r.chargeBefore !== undefined
+              ? ` · Battery ${r.chargeBefore} → ${r.chargeAfter}`
+              : r.truthPoints !== undefined
+                ? ` · Truth +${r.truthPoints}, bluff +${r.bluffPoints}`
+                : ""}
           </span>
         </div>
       ))}
@@ -79,8 +84,10 @@ export function KnowledgeGame({ room, locked, gameAction }: Props) {
         {reveal && s.answers ? (
           <div className="knowledge-reveal">
             <span className="eyebrow">THE ANSWERS</span>
-            <h2>Trivia: {s.answers.quiz}</h2>
-            <h2>Repair: {s.answers.repair}</h2>
+            <p className="reveal-question">{s.answers.quizQuestion}</p>
+            <h2>Answer: {s.answers.quiz}</h2>
+            <p className="reveal-question">{s.answers.repairQuestion}</p>
+            <h2>Repair answer: {s.answers.repair}</h2>
             <p>{s.answers.explanation}</p>
             {s.answers.source && (
               <a href={s.answers.source} target="_blank" rel="noreferrer">
@@ -88,6 +95,46 @@ export function KnowledgeGame({ room, locked, gameAction }: Props) {
               </a>
             )}
             <RoundPoints rows={s.rows} room={room} />
+            {playing && (
+              <div className="question-feedback">
+                <h3>How was that trivia question?</h3>
+                {room.private?.survival?.feedback ? (
+                  <p role="status">Feedback saved for this room.</p>
+                ) : (
+                  <div>
+                    {[
+                      ["too_easy", "Too easy"],
+                      ["too_hard", "Too hard"],
+                      ["ambiguous", "Unclear"],
+                      ["incorrect", "Answer seems wrong"],
+                    ].map(([reason, label]) => (
+                      <button
+                        type="button"
+                        className="button subtle small"
+                        key={reason}
+                        disabled={locked}
+                        onClick={() => gameAction("game:feedback", { reason })}
+                      >
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+                )}
+                <p>
+                  Anonymous counts stay in this room and disappear when it
+                  closes.
+                </p>
+              </div>
+            )}
+            {!!s.feedback?.some((f) => f.count > 0) && (
+              <p className="party-message">
+                Room feedback:{" "}
+                {s.feedback
+                  .filter((f) => f.count > 0)
+                  .map((f) => `${f.reason.replaceAll("_", " ")} ${f.count}`)
+                  .join(" · ")}
+              </p>
+            )}
           </div>
         ) : room.private?.submitted ? (
           <div className="party-waiting" role="status">

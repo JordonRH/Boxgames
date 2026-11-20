@@ -1,15 +1,18 @@
 import { z } from "zod";
 import type { RoomView, Triple } from "../../shared/types.js";
-import { GameError } from "./core.js";
+import { GameError, type GameOptions } from "./core.js";
 import { SimpleGame } from "./simple-base.js";
 import { scenarios } from "./content.js";
 export class CrowdGame extends SimpleGame {
   private choices = new Map<string, number>();
-  private deck = this.mixed(scenarios).slice(0, 5);
+  private deck = this.reserve("projects", scenarios, 5, (s) => s.id);
   private totals: Triple = [0, 0, 0];
   private winners: number[] = [];
-  constructor(players: { id: string; name: string }[]) {
-    super(players, 5);
+  constructor(
+    players: { id: string; name: string }[],
+    options: GameOptions = {},
+  ) {
+    super(players, 5, options);
   }
   advance(): "changed" | "lobby" {
     if (this.final) return "lobby";

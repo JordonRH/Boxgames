@@ -185,6 +185,126 @@ const packs: [
       "A shared dinner with a different constellation at every table.",
     ],
   ],
+  [
+    "The lost sock bureau",
+    "The laundrette wants to reunite missing socks with their owners.",
+    ["Sock Portraits", "Laundry Hotline", "Lonely Sock Prom"],
+    [
+      "Portraits of missing socks on every noticeboard.",
+      "A detective hotline staffed by retired washing machines.",
+      "A weekly dance for socks seeking a new match.",
+    ],
+  ],
+  [
+    "A pigeon conference",
+    "The station pigeons are hosting their first international conference.",
+    ["Crumb Summit", "Roof Diplomacy", "Coop Awards"],
+    [
+      "A grand debate over the ideal sandwich crumb.",
+      "A rooftop reception with miniature flags.",
+      "An awards show for outstanding public loafing.",
+    ],
+  ],
+  [
+    "The sleepy aquarium",
+    "The aquarium needs a new attraction for quiet weekday evenings.",
+    ["Fish Radio", "Coral Book Club", "Bubble Theatre"],
+    [
+      "A radio station with playlists chosen by fish.",
+      "A reading corner facing the most opinionated coral.",
+      "Tiny dramas performed entirely in bubbles.",
+    ],
+  ],
+  [
+    "The roundabout festival",
+    "A small suburb wants to celebrate its beloved traffic roundabout.",
+    ["Circle Marathon", "Island Picnic", "Indicator Orchestra"],
+    [
+      "A race where nobody ever reaches the finish.",
+      "A ceremonial picnic on the central island.",
+      "An orchestra made from perfectly timed indicators.",
+    ],
+  ],
+  [
+    "An ambitious bakery",
+    "A bakery has bought a huge oven and needs an opening stunt.",
+    ["Bread Skyline", "Bun Parliament", "Toast Gallery"],
+    [
+      "A model of the entire town built from bread.",
+      "A public election between competing cinnamon buns.",
+      "A gallery of famous portraits burned into toast.",
+    ],
+  ],
+  [
+    "A polite haunted house",
+    "A friendly ghost wants to improve its guest experience.",
+    ["Scheduled Spooks", "Ghost Concierge", "Midnight Compliments"],
+    [
+      "Book a convenient time to be mildly startled.",
+      "A floating concierge who carries your emotional baggage.",
+      "A voice that whispers reassuring compliments at midnight.",
+    ],
+  ],
+  [
+    "The spare chair museum",
+    "A museum has inherited hundreds of mismatched chairs.",
+    ["Chair Speed Dating", "Seat History", "The Great Sit"],
+    [
+      "Visitors test chairs in a series of brief meetings.",
+      "An audio tour of the arguments every chair has overheard.",
+      "A perfectly coordinated public sit-down.",
+    ],
+  ],
+  [
+    "The weekend weather office",
+    "The local weather office wants to make forecasts more personal.",
+    ["Mood Clouds", "Rain Reviews", "Forecast Swap"],
+    [
+      "A daily cloud forecast matched to your mood.",
+      "A five-star review system for each rain shower.",
+      "Trade an unwanted forecast for someone else’s sunshine.",
+    ],
+  ],
+  [
+    "The tiny cinema",
+    "A cinema with twelve seats needs a new signature event.",
+    ["Trailer Marathon", "Audience Commentary", "Popcorn Lab"],
+    [
+      "An entire evening of trailers for imaginary films.",
+      "The audience records the commentary before seeing the film.",
+      "A scientific tasting panel for improbable popcorn flavours.",
+    ],
+  ],
+  [
+    "The grand library return",
+    "The library is celebrating the return of a book sixty years overdue.",
+    ["Amnesty Parade", "Book Spa", "Fine Roulette"],
+    [
+      "A parade for everyone carrying an overdue book.",
+      "A restorative spa day for very tired paperbacks.",
+      "A wheel that replaces overdue fines with harmless dares.",
+    ],
+  ],
+  [
+    "The ordinary superhero league",
+    "Local superheroes have useful but extremely small powers.",
+    ["Queue Rescue", "Jar Patrol", "Receipt Recovery"],
+    [
+      "A hero who always chooses the fastest checkout queue.",
+      "A team that opens stubborn jars in emergencies.",
+      "A specialist who finds receipts seconds before they expire.",
+    ],
+  ],
+  [
+    "The gardeners’ gala",
+    "The allotment society has enough prize vegetables for a grand event.",
+    ["Carrot Couture", "Marrow Opera", "Compost Debate"],
+    [
+      "A fashion show featuring vegetable-sized evening wear.",
+      "An opera about a marrow seeking a more exciting life.",
+      "A formal debate over the future of compost.",
+    ],
+  ],
 ];
 export const scenarios: Scenario[] = packs.map(
   ([title, brief, names, descriptions], i) => ({

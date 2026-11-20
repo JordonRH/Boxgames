@@ -13,6 +13,7 @@ import {
   GameError,
   type GameEngine,
   type GameFactory,
+  type GameOptions,
   type PublicGame,
 } from "./core.js";
 export { GameError } from "./core.js";
@@ -219,8 +220,14 @@ export const gameRegistry = new Map<string, GameFactory>([
         {
           minPlayers: summary.minPlayers,
           metadata: summary,
-          create: (players: { id: string; name: string }[]) =>
-            new constructors[summary.id as keyof typeof constructors](players),
+          create: (
+            players: { id: string; name: string }[],
+            options?: GameOptions,
+          ) =>
+            new constructors[summary.id as keyof typeof constructors](
+              players,
+              options,
+            ),
         },
       ] as [string, GameFactory],
   ),

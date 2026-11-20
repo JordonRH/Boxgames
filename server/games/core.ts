@@ -1,4 +1,10 @@
 import type { GameView, RoomView, GameSummary } from "../../shared/types.js";
+import type { ContentHistory } from "./history.js";
+import type { PartySettings } from "../../shared/settings.js";
+export interface GameOptions {
+  history?: ContentHistory;
+  settings?: PartySettings;
+}
 export class GameError extends Error {
   constructor(
     public code: string,
@@ -30,9 +36,15 @@ export interface GameEngine {
   publicView(): PublicGame;
   privateView(id?: string): RoomView["private"];
   requiredPlayers?(): string[];
+  connectionIssue?(connectedIds: string[]): string | null;
+  waitingPlayers?(): string[];
+  feedback?(id: string, reason: string): void;
 }
 export interface GameFactory {
   minPlayers: number;
   metadata?: GameSummary;
-  create(players: { id: string; name: string }[]): GameEngine;
+  create(
+    players: { id: string; name: string }[],
+    options?: GameOptions,
+  ): GameEngine;
 }

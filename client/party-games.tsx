@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import type { RoomView, GameView } from "../shared/types.js";
 import { games as catalogue } from "../shared/games.js";
+import { SessionScores } from "./room-options.js";
 import { KnowledgeGame } from "./knowledge-games.js";
 type Action = (event: string, data?: Record<string, unknown>) => Promise<void>;
 export interface PartyProps {
@@ -141,7 +142,9 @@ export function PartyGame({ room, busy, gameAction, end }: PartyProps) {
           )}
         </div>
       </div>
-      <div className="controller-role">
+      <div
+        className={`controller-role ${g.waitingFor?.includes(room.playerId ?? "") ? "your-turn" : ""}`}
+      >
         <Users size={17} />
         {playing
           ? `You’re playing as ${names(room.playerId!)}${host ? " · host controls stay above" : ""}`
@@ -156,12 +159,45 @@ export function PartyGame({ room, busy, gameAction, end }: PartyProps) {
           </div>
         </div>
       )}
+      {g.notice && (
+        <div className="notice" role="status">
+          {g.notice}
+        </div>
+      )}
+      {g.waitingFor && g.waitingFor.length > 0 && (
+        <div className="waiting-roster" role="status">
+          <strong>
+            Waiting for {g.waitingFor.length}{" "}
+            {g.waitingFor.length === 1 ? "player" : "players"}
+          </strong>
+          <span>
+            {g.waitingFor
+              .map((id) => (id === room.playerId ? "You" : names(id)))
+              .join(", ")}
+          </span>
+        </div>
+      )}
       {(help || g.phase === "instructions") && (
         <section className="quick-rules">
           <p className="eyebrow">THAT’S THE WHOLE GAME</p>
           <h1>{meta.tagline}</h1>
+          {g.charades?.teams && (
+            <p className="team-rule">
+              Teams alternate, changing guesser each turn. Only active teammates
+              give clues. Reach {g.charades.target} points and lead after equal
+              turns to win. Maximum six turns per team; highest score then wins,
+              or a tie is shared.
+            </p>
+          )}
           <ol>
-            {meta.steps.map((s) => (
+            {(g.charades?.teams
+              ? [
+                  "The active guesser taps I’m ready. Only the category appears on their screen.",
+                  "Their teammates read the word on their own screens and give clues. Opponents wait.",
+                  "Clue-givers tap Got it for a correct guess. Active teammates can Pass.",
+                ]
+              : meta.steps
+            ).map((s) => (
               <li key={s}>{s}</li>
             ))}
           </ol>
@@ -176,6 +212,9 @@ export function PartyGame({ room, busy, gameAction, end }: PartyProps) {
                     ? "Other players never see who wrote a bluff until the reveal. Matching bluffs share the credit. Missing answers abstain."
                     : "No budgets. No predictions. Just tap one project."}
           </p>
+          {g.phase === "instructions" && g.charades?.teams && (
+            <TeamScores room={room} />
+          )}
           {g.phase === "instructions" &&
             (host ? (
               <button
@@ -206,13 +245,24 @@ export function PartyGame({ room, busy, gameAction, end }: PartyProps) {
             </p>
           )}
           <Scores room={room} />
+          <SessionScores room={room} />
+          {host && (
+            <button
+              className="button primary large full rematch-button"
+              disabled={busy}
+              onClick={() => gameAction("game:rematch")}
+            >
+              <RotateCcw size={20} />
+              Play again · same settings
+            </button>
+          )}
           {host ? (
             <button
-              className="button primary large full"
+              className="button subtle large full"
               disabled={busy}
               onClick={advance}
             >
-              <RotateCcw size={20} /> Choose another game
+              Choose another game
             </button>
           ) : (
             <Waiting>Your host can choose another game.</Waiting>
@@ -274,6 +324,18 @@ export function PartyGame({ room, busy, gameAction, end }: PartyProps) {
                         <h2>
                           Your hand <span>Tap one to play</span>
                         </h2>
+                        <button
+                          type="button"
+                          className="button subtle small refresh-hand"
+                          disabled={locked || !!room.private.cards.refreshUsed}
+                          onClick={() =>
+                            gameAction("game:submit", { action: "refresh" })
+                          }
+                        >
+                          {room.private.cards.refreshUsed
+                            ? "Hand refresh used"
+                            : "Refresh all 5 cards · once per game"}
+                        </button>
                         <div className="hand-cards">
                           {room.private.cards.hand.map((card) => (
                             <button
@@ -412,6 +474,9 @@ export function PartyGame({ room, busy, gameAction, end }: PartyProps) {
             )}
             {g.charades && (
               <section className="clues-board">
+                {g.charades.teams && g.phase !== "reveal" && (
+                  <TeamScores room={room} />
+                )}
                 <div className="turn-instruction">
                   <span>
                     {room.private?.charades?.isGuesser
@@ -424,18 +489,22 @@ export function PartyGame({ room, busy, gameAction, end }: PartyProps) {
                       : g.phase === "allocate"
                         ? `${g.charades.guesserName}, ready to guess?`
                         : playing
-                          ? room.private?.charades?.isGuesser
-                            ? "Listen to the clues. What’s the word?"
-                            : "Describe this word without saying it."
+                          ? room.private?.charades?.canPass === false
+                            ? "Watch the active team. Your team’s turn is next."
+                            : room.private?.charades?.isGuesser
+                              ? "Listen to the clues. What’s the word?"
+                              : "Describe this word without saying it."
                           : "Give clues from your own phone."}
                   </h1>
                   <p>
                     {g.phase === "allocate"
                       ? "The timer starts only when the guesser taps I’m ready."
                       : g.phase === "vote"
-                        ? room.private?.charades?.isGuesser
-                          ? "Say your guess out loud. A clue-giver marks it correct; you can tap Pass."
-                          : "Don’t say the word, any part of it, or a rhyme. Keep giving clues until the guesser gets it or passes."
+                        ? room.private?.charades?.canPass === false
+                          ? "Keep the answer secret and let the active team play."
+                          : room.private?.charades?.isGuesser
+                            ? "Say your guess out loud. A clue-giver marks it correct; you can tap Pass."
+                            : "Don’t say the word, any part of it, or a rhyme. Keep giving clues until the guesser gets it or passes."
                         : `${g.charades.passed} passed · correct guesses earn 1 point each`}
                   </p>
                 </div>
@@ -457,7 +526,9 @@ export function PartyGame({ room, busy, gameAction, end }: PartyProps) {
                     </Waiting>
                   ))}
                 {g.phase === "vote" &&
-                  (playing && room.private?.charades ? (
+                  (playing &&
+                  room.private?.charades &&
+                  room.private.charades.canPass !== false ? (
                     <>
                       <p className="clue-category">
                         <strong>Category:</strong> {g.charades.category}
@@ -573,7 +644,9 @@ export function PartyGame({ room, busy, gameAction, end }: PartyProps) {
                     onClick={advance}
                   >
                     <Play size={20} />{" "}
-                    {g.round >= g.rounds ? "See final scores" : "Next round"}
+                    {g.round >= g.rounds || g.charades?.outcome
+                      ? "See final scores"
+                      : "Next round"}
                   </button>
                 ) : (
                   <Waiting>The host will start the next round.</Waiting>
@@ -586,7 +659,38 @@ export function PartyGame({ room, busy, gameAction, end }: PartyProps) {
     </main>
   );
 }
+function TeamScores({ room }: { room: RoomView }) {
+  const c = room.game?.charades;
+  return (
+    <section className="team-scores" aria-label="Team scores">
+      <h2>{c?.outcome ?? `Target: ${c?.target} points · equal turns`}</h2>
+      {c?.teams?.map((team, index) => (
+        <article
+          key={team.name}
+          className={
+            index === c.activeTeam && room.game?.phase !== "final"
+              ? "active-team"
+              : ""
+          }
+        >
+          <strong>
+            {team.name} · {team.score} points
+          </strong>
+          <span>{team.turns} turns completed</span>
+          <small>
+            {team.ids
+              .map(
+                (id) => room.players.find((p) => p.id === id)?.name ?? "Player",
+              )
+              .join(", ")}
+          </small>
+        </article>
+      ))}
+    </section>
+  );
+}
 function Scores({ room }: { room: RoomView }) {
+  if (room.game?.charades?.teams) return <TeamScores room={room} />;
   const sorted = [...room.players].sort((a, b) => b.score - a.score);
   return (
     <div className="simple-scores" aria-label="Scores">

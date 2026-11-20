@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { z } from "zod";
-import { GameError } from "./core.js";
+import { GameError, type GameOptions } from "./core.js";
 import { SimpleGame } from "./simple-base.js";
 import { answers, prompts } from "./party-content.js";
 import type { RoomView, Scenario } from "../../shared/types.js";
@@ -17,16 +17,31 @@ export class CardsGame extends SimpleGame {
   private options: { id: string; text: string; authorId: string }[] = [];
   private deck: string[];
   private promptDeck: string[];
+  private refreshed = new Set<string>();
   private winner: string | null = null;
   private winnerText: string | null = null;
   private picked: string | null = null;
   private message: string | null = null;
-  constructor(players: { id: string; name: string }[]) {
-    super(players, players.length);
+  constructor(
+    players: { id: string; name: string }[],
+    options: GameOptions = {},
+  ) {
+    super(players, players.length, options);
     this.order = players.map((p) => p.id);
     this.judge = this.order[0];
-    this.deck = this.mixed(answers);
-    this.promptDeck = this.mixed(prompts);
+    this.deck = this.mixed(this.unused("cards", answers, (text) => text));
+    // A full game, including one five-card refresh per player, must fit.
+    if (this.deck.length < players.length * (players.length + 9))
+      throw new GameError(
+        "content_exhausted",
+        "Not enough fresh response cards for a full game. Reset used content in the lobby.",
+      );
+    this.promptDeck = this.reserve(
+      "prompts",
+      prompts,
+      players.length,
+      (text) => text,
+    );
     for (const p of players)
       this.hands.set(
         p.id,
@@ -34,8 +49,9 @@ export class CardsGame extends SimpleGame {
       );
   }
   private draw(): Card {
-    if (!this.deck.length) this.deck = this.mixed(answers);
-    return { id: randomUUID(), text: this.deck.pop()! };
+    const text = this.deck.pop()!;
+    this.seen("cards", text);
+    return { id: randomUUID(), text };
   }
   get advancesToInput() {
     return (
@@ -45,6 +61,15 @@ export class CardsGame extends SimpleGame {
   }
   private nextJudge() {
     return this.order.find((id) => this.hasPlayer(id) && !this.judged.has(id));
+  }
+  waitingPlayers() {
+    return this.phase === "allocate"
+      ? [...this.players.keys()].filter(
+          (id) => id !== this.judge && !this.plays.has(id),
+        )
+      : this.phase === "vote" && !this.picked
+        ? [this.judge]
+        : [];
   }
   requiredPlayers() {
     return this.input ? [this.judge] : [];
@@ -78,6 +103,30 @@ export class CardsGame extends SimpleGame {
   submit(id: string, action: "submit" | "vote", payload: unknown) {
     if (!this.hasPlayer(id))
       throw new GameError("not_playing", "Join the next game to play.");
+    if (
+      action === "submit" &&
+      z
+        .object({ action: z.literal("refresh") })
+        .strict()
+        .safeParse(payload).success
+    ) {
+      if (this.phase !== "allocate" || id === this.judge || this.plays.has(id))
+        throw new GameError(
+          "wrong_phase",
+          "Refresh before playing a card on your turn.",
+        );
+      if (this.refreshed.has(id))
+        throw new GameError(
+          "already_refreshed",
+          "You already used your one hand refresh this game.",
+        );
+      this.hands.set(
+        id,
+        Array.from({ length: 5 }, () => this.draw()),
+      );
+      this.refreshed.add(id);
+      return;
+    }
     const parsed = z
       .object({ cardId: z.string().uuid() })
       .strict()
@@ -218,6 +267,7 @@ export class CardsGame extends SimpleGame {
             hand: this.hands.get(id) ?? [],
             isJudge: id === this.judge,
             playedId: this.plays.get(id)?.id ?? null,
+            refreshUsed: this.refreshed.has(id),
           },
         }
       : null;

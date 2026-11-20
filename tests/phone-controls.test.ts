@@ -10,6 +10,8 @@ import { CrowdGame } from "../server/games/crowd.js";
 import type { GameEngine } from "../server/games/core.js";
 import type { RoomView } from "../shared/types.js";
 import { games } from "../shared/games.js";
+import { RoomOptions } from "../client/room-options.js";
+import { defaultSettings } from "../shared/settings.js";
 import { PartyGame } from "../client/party-games.js";
 const people = [
   { id: "a", name: "Alex" },
@@ -92,6 +94,11 @@ test("phone and host-player DOM controls are enabled and submit the chosen game 
     cards.advance();
     await render(view(cards, "b"));
     assert.equal(document.querySelectorAll(".hand-cards button").length, 5);
+    await tap(".refresh-hand");
+    assert.deepEqual(calls.at(-1), {
+      event: "game:submit",
+      data: { action: "refresh" },
+    });
     await tap(".hand-cards button");
     assert.equal(calls.at(-1)!.event, "game:submit");
     assert.ok(
@@ -212,6 +219,71 @@ test("phone and host-player DOM controls are enabled and submit the chosen game 
     );
     await tap(".clue-pass");
     assert.equal(calls.at(-1)!.data?.action, "pass");
+    const waiting = view(cards, "b", true);
+    waiting.game!.waitingFor = ["b", "c"];
+    await render(waiting);
+    assert.match(
+      document.querySelector(".waiting-roster")!.textContent!,
+      /Waiting for 2 players/,
+    );
+    assert.match(
+      document.querySelector(".controller-role")!.className,
+      /your-turn/,
+    );
+    cards.end();
+    await render(view(cards, "b", true));
+    await tap(".rematch-button");
+    assert.equal(calls.at(-1)!.event, "game:rematch");
+    const settingsRoom = view(cards, "a", true);
+    settingsRoom.settings = defaultSettings();
+    settingsRoom.selectedGame = "blackout-run";
+    await act(async () =>
+      root.render(
+        React.createElement(RoomOptions, {
+          room: settingsRoom,
+          busy: false,
+          action,
+        }),
+      ),
+    );
+    const select = document.querySelector<HTMLSelectElement>(
+      '[aria-label="Trivia difficulty"]',
+    )!;
+    await act(async () => {
+      select.value = "hard";
+      select.dispatchEvent(new dom.window.Event("change", { bubbles: true }));
+    });
+    assert.deepEqual(calls.at(-1), {
+      event: "host:settings",
+      data: { difficulty: "hard" },
+    });
+    const checkbox = document.querySelector<HTMLInputElement>(
+      'input[type="checkbox"]',
+    )!;
+    await act(async () => checkbox.click());
+    assert.deepEqual(calls.at(-1), {
+      event: "host:settings",
+      data: { carryScores: true },
+    });
+    const four = [...people, { id: "d", name: "Drew" }],
+      teamSettings = { ...defaultSettings(), clueMode: "teams" as const };
+    const team = new CharadesGame(four, { settings: teamSettings });
+    team.advance();
+    team.submit("a", "submit", { action: "ready" });
+    team.complete(false);
+    const opponent = view(team, "b");
+    opponent.players = four.map((p) => ({ ...p, connected: true, score: 0 }));
+    await render(opponent);
+    assert.equal(document.querySelector(".clue-word"), null);
+    assert.equal(document.querySelector(".clue-correct"), null);
+    assert.match(document.body.textContent!, /Team Lime/);
+    await render({
+      ...opponent,
+      playerId: "c",
+      private: team.privateView("c"),
+    });
+    await tap(".clue-correct");
+    assert.equal(calls.at(-1)!.data?.action, "correct");
   } finally {
     await act(async () => root.unmount());
     dom.window.close();

@@ -8,11 +8,11 @@ Production hostname: **https://boxgame.jrhtechservices.party**.
 
 ## Pick a game
 
-| Game                          | Your whole move                                                                                                                   |
-| ----------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
-| **Blank Slate** · 3–8 players | Tap one of five cards to fill a silly blank. The rotating judge taps their favourite. Winner gets 1 point.                        |
-| **Clue Crew** · 2–8 players   | The guesser sees only a category. Friends read the word on their own phones and give spoken clues. One 60-second turn per player. |
-| **Crowd Pick** · 3–8 players  | Read three odd community projects and tap one favourite. The most popular choice wins its voters 1 point. Five rounds.            |
+| Game                          | Your whole move                                                                                                                                                       |
+| ----------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Blank Slate** · 3–8 players | Tap one of five cards to fill a silly blank. The rotating judge taps their favourite. Winner gets 1 point.                                                            |
+| **Clue Crew** · 2–8 players   | The guesser sees only a category. Friends read the word on their own phones and give spoken clues. One 60-second turn per player, or alternate teams toward a target. |
+| **Crowd Pick** · 3–8 players  | Read three odd community projects and tap one favourite. The most popular choice wins its voters 1 point. Five rounds.                                                |
 
 | **Blackout Run** · 2–8 players | Tap a trivia answer, then a repair answer. Keep your charge through six rounds; everyone stays in. |
 | **False Front** · 2–8 players | Invent a fake word meaning, then spot the truth in a private two-choice duel. Five rounds. |
@@ -28,7 +28,19 @@ Production hostname: **https://boxgame.jrhtechservices.party**.
 
 Clue Crew uses large manual buttons on every device, including PCs. Motion sensors and tilt gestures are not required. The shared screen never shows the live word, so the guesser cannot read it from the TV. The phone can face outward, and friends can mark guesses from their own phones.
 
-Blank Slate has 32 original prompts and 168 original response cards, including 48 new short responses; Clue Crew has 120 categorised ordinary words/actions; Crowd Pick uses the 18 original scenario sets. Blackout Run starts with 24 independently written medium/hard trivia questions across six subjects and 120 generated multi-step repair puzzles; False Front has 8 odd-word entries with independently phrased definitions. These are small starter packs: repeated sessions can repeat content. Factual source links appear after each reveal. No commercial card packs, game names, art, or branded word decks are included. Repository references and reuse decisions: [research notes](docs/research.md). Quick player instructions: [game guide](docs/game-guide.md).
+Blank Slate has 64 original prompts and 240 original response cards; Clue Crew has 240 categorised words/actions; Crowd Pick has 30 original scenario sets. Blackout Run has 72 independently written questions (24 each at Casual, Medium and Hard) across six subjects and 120 multi-step repair puzzles. False Front has 24 odd-word entries with independently phrased definitions. Content used or reserved for a game is tracked for that room. Rematches use fresh items; the host can explicitly reset used content when a pack runs out. Factual source links appear after each reveal. No commercial card packs, game names, art, or branded word decks are included. Repository references and reuse decisions: [research notes](docs/research.md). Quick player instructions: [game guide](docs/game-guide.md).
+
+## A longer game night
+
+- Choose **Casual**, **Mixed**, or **Hard** for Blackout Run in the lobby. Mixed ramps from three medium to three hard questions; other modes use their selected level throughout. Only trivia difficulty changes; repair puzzles keep their own challenge level.
+- Pick **Two teams** for Clue Crew with 4–8 players. Assign at least two people per team and choose a 10/15/20-point target. Teams alternate with rotating guessers; a lead after equal turns wins once a team reaches the target. After six turns each, highest score wins or a tie is shared. Solo remains available.
+- **Play again · same settings** on the final screen keeps room codes, seats, names, timing and game options. The short rules appear before the host begins. **Choose another game** returns to the same lobby.
+- Enable **Keep a session scoreboard** before playing to add completed-game points across the room. Each new game's own scores start at zero. Totals use raw points, not a ranking normalised across games or teams; Clue Crew credits individual points to each turn's guesser. Reset session scores separately in the lobby.
+- Blank Slate players get **one five-card hand refresh per game**, before playing a card on a non-judging turn. It remains used after reconnecting.
+- Waiting banners name the players whose move is due, without sharing their choices. Trivia reveals repeat the original questions and explain points/battery changes. Bluff reveals show authors, voters, truth points and bluff points.
+- Trivia feedback is one flag per seat per round, during reveal only. The room sees aggregate counts; nothing is uploaded to analytics or saved as a permanent report. Flags expire with the current game/room.
+
+No automatic reshuffle introduces repeats into a room. When fresh content is insufficient, the previous game and scores stay intact and the host can return to the lobby to **Reset used content · allow repeats**. Questions, prompts, terms and project sets are reserved for the whole game, including unplayed rounds; response cards are marked when dealt. A full hand-refresh allowance is budgeted before a card game starts, so it may need a reset while some unused cards remain. If the clue-word deck runs out during play, the last completed guesses are scored and the game ends with an explanation. New rooms start fresh, so different rooms can repeat content.
 
 ## Run with Docker
 
@@ -124,7 +136,7 @@ Tests use disposable local rooms and generated credentials; they never target pr
 
 ## Privacy and operations
 
-Player names, choices, scores, and credential hashes are in memory only. Round submissions disappear after review; room names/scores disappear on closure or expiry. Short-lived network identities serve abuse limits only. Application logs exclude names, answers, codes, credentials, URLs, and headers. Public entry-point providers may independently process connection metadata.
+Player names, choices, scores, optional session totals, used-content history, temporary question-feedback reports, and credential hashes are in memory only. Round submissions disappear after review; room names/scores disappear on closure or expiry. Short-lived network identities serve abuse limits only. Application logs exclude names, answers, codes, credentials, URLs, and headers. Public entry-point providers may independently process connection metadata.
 
 There is no game-state database or backup. Back up source, original content, release references, and deployment instructions. Health: `/api/health` reports only status/version/revision. Logs rotate at three 10 MiB files per container. Avoid inspecting existing environment files, container configuration, credentials, or raw infrastructure logs.
 

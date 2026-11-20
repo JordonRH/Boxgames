@@ -5,7 +5,7 @@ export const games: GameSummary[] = [
     title: "Blackout Run",
     tagline: "Most points wins. Keep a little power in reserve.",
     description:
-      "A six-round quiz with harder questions and a puzzle each round. Earn points and protect your battery bonus.",
+      "Choose Casual, Mixed or Hard for a six-round quiz with repair puzzles. Earn points and protect your battery bonus.",
     minPlayers: 2,
     minutes: "6–10 min",
     color: "lime",
@@ -50,7 +50,7 @@ export const games: GameSummary[] = [
     title: "Clue Crew",
     tagline: "One guesses. Everyone gives clues.",
     description:
-      "Guess from spoken clues while your friends read the word on their own screens. Your screen shows only the category.",
+      "Play together or split into two teams. Guess from spoken clues while your friends read the word on their own screens.",
     minPlayers: 2,
     minutes: "3–8 min",
     color: "coral",
