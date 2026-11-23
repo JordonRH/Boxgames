@@ -1,0 +1,128 @@
+import type { GameSummary } from "./types.js";
+export const arcadeGames: GameSummary[] = [
+  {
+    id: "time-tangle",
+    title: "Time Tangle",
+    tagline: "Good memory. Questionable chronology.",
+    description:
+      "Estimate the year of a real event. Near misses still earn points.",
+    minPlayers: 2,
+    minutes: "4–6 min",
+    color: "lime",
+    featured: true,
+    steps: [
+      "Enter the year you think the event happened. One guess per round.",
+      "Exact answers earn 12 points. Near misses earn fewer points; guesses a long way off earn zero.",
+      "Six events. Highest total wins; the answer and its factual source appear at every reveal.",
+    ],
+  },
+  {
+    id: "world-wander",
+    title: "World Wander",
+    tagline: "You know the name. Now find the place.",
+    description: "Drop a map pin on a city somewhere in the world.",
+    minPlayers: 2,
+    minutes: "4–6 min",
+    color: "violet",
+    featured: true,
+    steps: [
+      "Tap the world map to place a pin. Zoom or use latitude/longitude controls for precision.",
+      "Lock your pin. Within 500 km earns 12 points; each further 500 km costs one point, down to zero.",
+      "Six locations. Everyone's distance and points appear after the reveal.",
+    ],
+  },
+  {
+    id: "road-trip",
+    title: "Road Trip",
+    tagline: "Australia is bigger than you remember.",
+    description: "Find Australian cities and towns on an unlabelled map.",
+    minPlayers: 2,
+    minutes: "4–6 min",
+    color: "coral",
+    featured: true,
+    steps: [
+      "Place a pin on the named Australian town or city and lock it in.",
+      "Within 150 km earns 12 points. Each additional 150 km costs one point, down to zero.",
+      "Six stops. The correct location and your distance appear at each reveal.",
+    ],
+  },
+  {
+    id: "creature-check",
+    title: "Creature Check",
+    tagline: "Nature is weird. So are we.",
+    description: "Sort strange animal names from our invented nonsense.",
+    minPlayers: 2,
+    minutes: "2–4 min",
+    color: "lime",
+    featured: true,
+    steps: [
+      "Mark each of six names as a real animal or an invented name.",
+      "Submit all six together before the timer ends. No partial answers are sent.",
+      "Earn 2 per correct choice and 3 extra for a clean sweep. Three sets; most points wins.",
+    ],
+  },
+  {
+    id: "odd-canvas",
+    title: "Odd Canvas",
+    tagline: "Terrible art. Excellent company.",
+    description:
+      "Draw movies, games, sport, original creatures or everyday chaos, then vote.",
+    minPlayers: 3,
+    minutes: "5–7 min",
+    color: "violet",
+    featured: true,
+    steps: [
+      "The host chooses a drawing category. Sketch the prompt on your phone or PC, without written titles or names.",
+      "Submit your sketch. Vote for one favourite in the anonymous gallery; you cannot vote for your own.",
+      "Each vote earns its artist 2 points. Three prompts. Refreshing before submission loses the unsent sketch.",
+    ],
+  },
+  {
+    id: "rare-find",
+    title: "Rare Find",
+    tagline: "Be right. Be different.",
+    description:
+      "Choose a valid answer that fewer people in the room will pick.",
+    minPlayers: 3,
+    minutes: "3–5 min",
+    color: "coral",
+    featured: true,
+    steps: [
+      "Read the category carefully and type one valid answer. Spelling variants listed in the pack are accepted.",
+      "A unique answer earns 12 points. Answers chosen by more people earn fewer points, with at least 1 for a valid answer.",
+      "Invalid or missing answers score zero. Six rounds; the most points wins.",
+    ],
+  },
+  {
+    id: "mic-check",
+    title: "Mic Check",
+    tagline: "Know the artist before the obvious clue.",
+    description:
+      "Guess music artists and acts from two progressively clearer clues.",
+    minPlayers: 2,
+    minutes: "4–6 min",
+    color: "violet",
+    featured: true,
+    steps: [
+      "Read the first clue and submit an artist or act's name for a chance at 10 points.",
+      "If you missed, a clearer clue gives one more guess for 5 points. Correct first guesses stay locked.",
+      "Six artists or acts. Original written clues, no commercial recordings or unlicensed portraits.",
+    ],
+  },
+  {
+    id: "echo-box",
+    title: "Echo Box",
+    tagline: "Four notes. One very confident guess.",
+    description:
+      "Match an original four-note pattern by listening or watching its pitch sequence.",
+    minPlayers: 2,
+    minutes: "3–5 min",
+    color: "lime",
+    featured: true,
+    steps: [
+      "The host or paired display plays an original four-note pattern. Visual pitch playback is available too.",
+      "On your own device, choose the matching low-to-high pitch sequence and lock it in.",
+      "Correct choices earn 10 points. Six patterns. Replays are allowed; sound is optional with visual playback.",
+    ],
+  },
+];

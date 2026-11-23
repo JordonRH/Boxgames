@@ -1,0 +1,367 @@
+.arcade-board,
+.arcade-stage {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+.arcade-board h1,
+.arcade-stage h1 {
+  font-size: clamp(1.8rem, 4vw, 3.8rem);
+  line-height: 1.14;
+}
+.arcade-answer-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  max-width: 650px;
+}
+.arcade-answer-form label {
+  font-weight: 700;
+}
+.arcade-answer-form input,
+.coordinate-controls input {
+  width: 100%;
+  background: var(--panel);
+  border: 1px solid #58644e;
+  color: var(--lime);
+  border-radius: 14px;
+  padding: 16px;
+  font-size: 1.35rem;
+  min-width: 0;
+}
+.arcade-answer-form input[type="number"] {
+  font-size: 2.5rem;
+  letter-spacing: 0.1em;
+}
+.artist-clue {
+  font-size: clamp(1.3rem, 2.5vw, 2.3rem);
+  color: #e3e8dc;
+  background: #27233a;
+  border-left: 5px solid var(--violet);
+  padding: 24px;
+  border-radius: 0 16px 16px 0;
+}
+.arcade-submitted {
+  padding: 32px;
+  background: #25301f;
+  border: 1px solid #526742;
+  border-radius: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  color: var(--lime);
+}
+.rapid-choices {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+.rapid-choices fieldset {
+  border: 1px solid #4b5842;
+  border-radius: 16px;
+  padding: 18px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.rapid-choices legend {
+  padding: 0 6px;
+  font-size: 1.15rem;
+  font-weight: 700;
+}
+.rapid-choices .button {
+  flex: 1;
+  justify-content: center;
+  min-height: 48px;
+  font-size: 0.85rem;
+}
+.creature-wall {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+}
+.creature-wall > span {
+  background: #283123;
+  padding: 24px;
+  border-radius: 18px;
+  font-size: clamp(1.1rem, 2vw, 2rem);
+}
+.creature-wall b {
+  display: block;
+  font-size: 0.9rem;
+  color: var(--lime);
+  margin-top: 12px;
+}
+.arcade-answer {
+  font-size: clamp(1.8rem, 3vw, 3rem);
+  color: var(--lime);
+}
+.answer-source {
+  font-size: 0.8rem;
+  color: var(--violet);
+  text-decoration: underline;
+}
+.arcade-results {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.arcade-results p {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  border-radius: 12px;
+  background: #252d20;
+  padding: 14px 18px;
+}
+.arcade-results strong {
+  min-width: 100px;
+  max-width: 30%;
+  overflow-wrap: anywhere;
+  color: #f0f5e9;
+}
+.arcade-results span {
+  flex: 1;
+  font-size: 0.9rem;
+}
+.arcade-results b {
+  color: var(--lime);
+  font-size: 1.2rem;
+}
+.your-arcade-result {
+  border: 1px solid var(--lime);
+  border-radius: 16px;
+  padding: 20px;
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.your-arcade-result strong {
+  color: var(--lime);
+}
+.sketch-controller {
+  max-width: 540px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.ink-tools {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.ink-tools > button:not(.button) {
+  width: 36px;
+  height: 36px;
+  border: 2px solid #66705c;
+  border-radius: 50%;
+}
+.ink-tools > button[aria-pressed="true"] {
+  outline: 3px solid var(--lime);
+  outline-offset: 3px;
+}
+.drawing-pad {
+  display: block;
+  width: 100%;
+  background: #f2f3e8;
+  border-radius: 16px;
+  touch-action: none;
+  user-select: none;
+  cursor: crosshair;
+}
+.sketch-controller small,
+.geo-map small {
+  color: var(--muted);
+  font-size: 0.75rem;
+  line-height: 1.5;
+}
+.sketch-gallery {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
+}
+.sketch-gallery article {
+  min-width: 0;
+  border: 1px solid #536146;
+  border-radius: 18px;
+  background: #20271c;
+  overflow: hidden;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.sketch-gallery img {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 1;
+  border-radius: 10px;
+  background: #f2f3e8;
+}
+.sketch-gallery p {
+  font-size: 0.85rem;
+  text-align: center;
+}
+.geo-map {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-width: 1100px;
+}
+.geo-map > svg {
+  width: 100%;
+  height: auto;
+  border: 1px solid #4b6c72;
+  border-radius: 18px;
+  touch-action: manipulation;
+  cursor: crosshair;
+}
+.map-controls {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.map-controls .button {
+  padding: 10px;
+  min-height: 44px;
+  min-width: 44px;
+}
+.coordinate-controls {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  max-width: 600px;
+}
+.coordinate-controls label {
+  font-size: 0.85rem;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  color: var(--muted);
+}
+.coordinate-controls input {
+  font-size: 1rem;
+}
+.tone-player {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  max-width: 800px;
+}
+.pitch-bars {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+  min-height: 170px;
+  background: #201b2e;
+  padding: 20px;
+  border-radius: 18px;
+}
+.pitch-bars > div {
+  height: 160px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 12px;
+  opacity: 0.45;
+}
+.pitch-bars .pitch-active {
+  opacity: 1;
+}
+.pitch-bars span {
+  width: 65%;
+  border-radius: 10px 10px 3px 3px;
+  background: var(--violet);
+  min-height: 15px;
+}
+.pitch-bars small {
+  font-size: 0.85rem;
+  color: white;
+}
+.sound-choices {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.sound-choices > .button {
+  font-size: 0.9rem;
+  line-height: 1.5;
+  text-align: left;
+  min-height: 72px;
+}
+.tv-stage .arcade-stage .geo-map {
+  max-width: 900px;
+}
+.tv-stage .sketch-gallery {
+  max-width: 1200px;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+}
+.tv-stage .sketch-gallery article {
+  padding: 8px;
+}
+.tv-stage .arcade-results {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+}
+.tv-stage .arcade-results p {
+  font-size: 1rem;
+}
+.tv-stage .arcade-stage h1 {
+  margin: 0;
+  font-size: clamp(2rem, 3vw, 4rem);
+}
+@media (max-width: 680px) {
+  .rapid-choices {
+    grid-template-columns: 1fr;
+  }
+  .sketch-gallery {
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+  .sketch-gallery article {
+    padding: 8px;
+  }
+  .sketch-gallery .button {
+    font-size: 0.78rem;
+    padding: 12px 8px;
+  }
+  .sound-choices {
+    grid-template-columns: 1fr;
+  }
+  .creature-wall {
+    grid-template-columns: 1fr 1fr;
+  }
+  .artist-clue {
+    padding: 20px;
+    font-size: 1.35rem;
+  }
+  .arcade-results p {
+    padding: 12px;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .arcade-results strong {
+    max-width: 100%;
+  }
+  .arcade-results span {
+    min-width: 50%;
+  }
+  .tv-stage .sketch-gallery {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .tv-stage .arcade-results {
+    grid-template-columns: 1fr;
+  }
+  .pitch-bars {
+    padding: 14px;
+    gap: 8px;
+  }
+  .pitch-bars small {
+    font-size: 0.7rem;
+  }
+  .coordinate-controls {
+    gap: 10px;
+  }
+}

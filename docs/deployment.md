@@ -88,3 +88,7 @@ The existing dashboard entry stays at `https://boxgame.jrhtechservices.party`; n
 ## Capacity configuration
 
 `MAX_PLAYERS_PER_ROOM=0` removes a separate room cap; positive values enforce an optional per-room maximum. The server-wide `MAX_CONNECTIONS` remains capped at 1,000 and includes hosts/displays. `CONNECTIONS_PER_NETWORK` defaults to 1,000 for new deployments so a shared Wi-Fi connection can fill a large room. Existing operator environment values remain in force; a lower network setting must be reviewed explicitly before a larger event. Configuration changes require recreation through the gated release path. No real environment file is inspected or modified by this change. Fifty controllers are tested, not 1,000; benchmark the actual host/network before larger events.
+
+## Bundled map and ephemeral artwork routes
+
+`/maps/land.json` is a locally bundled public-domain map asset, delivered by the same web entry service. `/api/art/<room-code>/<random-art-id>.svg` serves a sketch only during the drawing game's voting/reveal phases, after submission; it does not write files or mount storage. Gallery art IDs are random and carry no author name before reveal. SVG is generated from validated numeric strokes and a fixed palette, with `Cache-Control: private, max-age=60`. Public access uses the existing hostname/origin; no additional port, route, service or tunnel is required. Ordinary application logging still records no names, answers, sketch bodies, gallery URLs or session credentials.

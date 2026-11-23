@@ -8,14 +8,25 @@ Production hostname: **https://boxgame.jrhtechservices.party**.
 
 ## Pick a game
 
-| Game                          | Your whole move                                                                                                                                                       |
-| ----------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Blank Slate** · 3+ players | Tap one of five cards to fill a silly blank. The rotating judge taps their favourite. Winner gets 1 point.                                                            |
-| **Clue Crew** · 2+ players   | The guesser sees only a category. Friends read the word on their own phones and give spoken clues. One 60-second turn per player, or alternate teams toward a target. |
-| **Crowd Pick** · 3+ players  | Read three odd community projects and tap one favourite. The most popular choice wins its voters 1 point. Five rounds.                                                |
+The new eight are shown first. **More games · the original five** opens the earlier collection without removing it.
 
-| **Blackout Run** · 2+ players | Tap a trivia answer, then a repair answer. Keep your charge through six rounds; everyone stays in. |
-| **False Front** · 2+ players | Invent a fake word meaning, then spot the truth in a private two-choice duel. Five rounds. |
+| Game               | Players | Your move                                                                                                       |
+| ------------------ | ------- | --------------------------------------------------------------------------------------------------------------- |
+| **Time Tangle**    | 2+      | Estimate the year. Six real events, with points for near misses.                                                |
+| **World Wander**   | 2+      | Pin a city on an unlabelled world map. Six locations, scored by distance.                                       |
+| **Road Trip**      | 2+      | Find Australian towns and cities. Six stops, scored by distance.                                                |
+| **Creature Check** | 2+      | Mark six names real or invented, then submit the whole set. Three sets.                                         |
+| **Odd Canvas**     | 3+      | Draw a movie, game, sport, original creature or everyday scene. Vote anonymously; no self-votes. Three prompts. |
+| **Rare Find**      | 3+      | Type a valid answer that fewer people in the room choose. Six categories.                                       |
+| **Mic Check**      | 2+      | Guess music artists or acts from two progressively clearer written clues. Six acts.                             |
+| **Echo Box**       | 2+      | Match an original four-note pattern by listening or watching. Six patterns.                                     |
+| **Blank Slate**    | 3+      | Play a private response card; a rotating judge picks a favourite.                                               |
+| **Clue Crew**      | 2+      | One guesses from spoken clues; teammates see the word privately.                                                |
+| **Crowd Pick**     | 3+      | Vote for a favourite odd proposal. Five rounds.                                                                 |
+| **Blackout Run**   | 2+      | Answer trivia and repair puzzles; six rounds plus a battery bonus.                                              |
+| **False Front**    | 2+      | Write a fake definition and find the real one in a private duel. Five rounds.                                   |
+
+All online games support phone and PC controllers and the dedicated TV/PC browser display. The original identity, wording, content and scoring are Boxgame's. The reference repository was read only; no code, assets or game packs were copied from it.
 
 ### Start playing
 
@@ -40,7 +51,7 @@ Blank Slate has 64 original prompts and 240 original response cards; Clue Crew h
 - Waiting banners name the players whose move is due, without sharing their choices. Trivia reveals repeat the original questions and explain points/battery changes. Bluff reveals show authors, voters, truth points and bluff points.
 - Trivia feedback is one flag per seat per round, during reveal only. The room sees aggregate counts; nothing is uploaded to analytics or saved as a permanent report. Flags expire with the current game/room.
 
-No automatic reshuffle introduces repeats into a room. When fresh content is insufficient, the previous game and scores stay intact and the host can return to the lobby to **Reset used content · allow repeats**. Questions, prompts, terms and project sets are reserved for the whole game, including unplayed rounds; response cards are marked when dealt. A full hand-refresh allowance is budgeted before a card game starts, so it may need a reset while some unused cards remain. If the clue-word deck runs out during play, the last completed guesses are scored and the game ends with an explanation. New rooms start fresh, so different rooms can repeat content.
+Apart from the documented large-card response recycling, no automatic reshuffle introduces repeats into a room. When fresh content is insufficient, the previous game and scores stay intact and the host can return to the lobby to **Reset used content · allow repeats**. Questions, prompts, terms and project sets are reserved for the whole game, including unplayed rounds; response cards are marked when dealt. A full hand-refresh allowance is budgeted before a card game starts, so it may need a reset while some unused cards remain. If the clue-word deck runs out during play, the last completed guesses are scored and the game ends with an explanation. New rooms start fresh, so different rooms can repeat content.
 
 ## Run with Docker
 
@@ -175,3 +186,13 @@ The lobby has **Let everyone in** for bulk approval. Per-network join/resume/act
 Above eight players, **Blank Slate** uses six rounds with randomly ordered rotating judges, rather than one round per attendee. A hand still contains five different private cards; one refresh gives five different replacements. Response texts may repeat between players or across large games, while fresh prompt history remains room-scoped. Judging gets at least four seconds per submitted card (or the host can choose untimed play). The TV cycles through six plays every eight seconds; the judge sees all plays on their controller.
 
 Above eight, **Clue Crew** uses two teams automatically, with at least two members per team and at most six turns per team. Only the active guesser's teammates get the secret word. Blackout Run, False Front and Crowd Pick keep their existing fixed round counts and accept the whole room. Phone and PC controllers use the same rules; the larger-room support also works when the host is on a phone. Pocket Circuit remains a deliberately local 3–12-person pass-one-phone game.
+
+## Drawing, music and map details
+
+Choose Odd Canvas's category in the lobby: **Mixed, Movies, Video games & board games, Sport, Original creatures, Everyday chaos**. Prompts are original writing; named film/game subjects are drawn by players. No film stills, character art, commercial music clips or artist portraits are bundled. Mic Check uses independently written factual clues and source links to artists’ official sites. Echo Box synthesises its own notes in the browser; **Watch without sound** provides pitch playback without audio. Browsers require a local user gesture for sound, so the receiving screen has a Play button.
+
+Sketches are bounded to 30 strokes and 400 quantised points, submitted only when the player taps Submit. The server holds them in game memory. During voting, participants receive anonymous gallery IDs and fetch validated SVG sketches from the same server. Artists and vote totals appear only at reveal. The SVG endpoint refuses unrevealed, missing or removed art, never embeds player-provided markup, and uses a one-minute private browser cache. Closing/restarting the room removes server state; already revealed art may remain cached briefly on a player’s device.
+
+Maps are bundled locally from public-domain Natural Earth data; there are no tile-server calls. Tap, keyboard arrow movement, zoom/pan buttons and coordinate fields are available. The starter packs contain 23 world cities, 26 Australian towns/cities, 16 year questions, 12 music artists/acts, 48 real/invented creature names, 40 drawing prompts across five categories, 12 rarity categories and 64 original sound patterns. Room-scoped fresh-content checks apply; use Reset used content deliberately when a pack is exhausted.
+
+Tests cover complete games/scoring, all input modes, draw/vote privacy, invalid/oversized submissions, artist second chances, no self-votes, authenticated display projections and production asset routes. Desktop/phone/TV rendering and actual audio/casting hardware still need device acceptance; DOM and protocol tests are not visual or hardware tests.

@@ -4,6 +4,7 @@ import { fileURLToPath } from "node:url";
 import path from "node:path";
 import { Server } from "socket.io";
 import { BlockList } from "node:net";
+import { renderInk } from "./games/render-ink.js";
 import { RoomManager, Limiter, type Config } from "./rooms/manager.js";
 import type { GameFactory } from "./games/registry.js";
 import { handshakePolicy } from "./handshake.js";
@@ -171,6 +172,16 @@ export function createApp(
   io.on("connection", (socket) =>
     manager.attach(socket, identity(socket.request)),
   );
+  app.get("/api/art/:code/:artId.svg", (req, res) => {
+    const room = manager.rooms.get(manager.codes.get(req.params.code) ?? "");
+    const ink = room?.game?.artwork?.(req.params.artId);
+    if (!ink) {
+      res.status(404).end();
+      return;
+    }
+    res.setHeader("Cache-Control", "private, max-age=60");
+    res.type("image/svg+xml").send(renderInk(ink));
+  });
   const clientDir = fileURLToPath(new URL("../client/", import.meta.url));
   app.use(
     "/assets",
@@ -184,11 +195,15 @@ export function createApp(
   app.use("/assets", (_req, res) => {
     res.status(404).end();
   });
+  app.get("/maps/land.json", (_req, res) =>
+    res.sendFile(path.join(clientDir, "maps/land.json"), { maxAge: "1d" }),
+  );
   app.get("/icon.svg", (_req, res) =>
     res.sendFile(path.join(clientDir, "icon.svg")),
   );
-  app.get(["/", "/join", "/host", "/privacy", "/screen", "/screen/"], (_req, res) =>
-    res.sendFile(path.join(clientDir, "index.html")),
+  app.get(
+    ["/", "/join", "/host", "/privacy", "/screen", "/screen/"],
+    (_req, res) => res.sendFile(path.join(clientDir, "index.html")),
   );
   app.use((_req, res) => {
     res.status(404).json({ error: "not_found" });

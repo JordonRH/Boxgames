@@ -15,6 +15,32 @@ export function RoomOptions({
   return (
     <section className="room-options">
       <h2>Make it your game</h2>
+      {room.selectedGame === "odd-canvas" && (
+        <label>
+          Drawing category
+          <select
+            aria-label="Drawing category"
+            value={settings.drawingCategory ?? "mixed"}
+            disabled={busy}
+            onChange={(e) =>
+              action("host:settings", { drawingCategory: e.target.value })
+            }
+          >
+            {[
+              { id: "mixed", name: "A bit of everything" },
+              { id: "movies", name: "Movies" },
+              { id: "games", name: "Video games & board games" },
+              { id: "sports", name: "Sport" },
+              { id: "creatures", name: "Original creatures" },
+              { id: "everyday", name: "Everyday chaos" },
+            ].map((c) => (
+              <option value={c.id} key={c.id}>
+                {c.name}
+              </option>
+            ))}
+          </select>
+        </label>
+      )}
       {room.selectedGame === "blackout-run" && (
         <label>
           Trivia difficulty

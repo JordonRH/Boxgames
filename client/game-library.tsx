@@ -1,5 +1,13 @@
 import React, { useEffect, useState } from "react";
 import {
+  Clock3,
+  Globe2,
+  MapPin,
+  Bug,
+  Paintbrush,
+  Gem,
+  Mic2,
+  AudioLines,
   ArrowUpRight,
   Monitor,
   Smartphone,
@@ -17,6 +25,16 @@ import {
 import { games } from "../shared/games.js";
 type Mode = "screen" | "phone" | "pass";
 const icons = [Zap, MessageCircle, Layers, Hand, Sparkles];
+const gameIcons: Record<string, typeof Zap> = {
+  "time-tangle": Clock3,
+  "world-wander": Globe2,
+  "road-trip": MapPin,
+  "creature-check": Bug,
+  "odd-canvas": Paintbrush,
+  "rare-find": Gem,
+  "mic-check": Mic2,
+  "echo-box": AudioLines,
+};
 const challenges = [
   "Name three things you would pack for a trip to the moon.",
   "Name three terrible names for a restaurant.",
@@ -56,6 +74,7 @@ export function GameLibrary({
   code: string;
   setCode: (value: string) => void;
 }) {
+  const [moreGames, setMoreGames] = useState(false);
   const [mode, setMode] = useState<Mode>("screen"),
     [local, setLocal] = useState(false);
   if (local) return <PocketCircuit back={() => setLocal(false)} />;
@@ -229,27 +248,17 @@ export function GameLibrary({
             </article>
           ) : (
             games
-              .filter((g) => !g.hidden)
+              .filter((g) => !g.hidden && (g.featured || moreGames))
               .map((g, i) => {
-                const Icon = icons[i % icons.length];
+                const Icon = gameIcons[g.id] ?? icons[i % icons.length];
                 return (
                   <article
                     className={`library-card card-${g.color}`}
                     key={g.id}
                   >
-                    <div className={`game-art art-${i}`} aria-hidden="true">
+                    <div className={`game-art art-${i % 5}`} aria-hidden="true">
                       <Icon />
-                      <span>
-                        {
-                          [
-                            "OUTSMART\nTHE DARK.",
-                            "SOUNDS\nBELIEVABLE.",
-                            "FILL IT.\nOWN IT.",
-                            "CLUE\nME IN.",
-                            "PICK\nYOUR SIDE.",
-                          ][i]
-                        }
-                      </span>
+                      <span>{g.title.toUpperCase()}</span>
                       <i>0{i + 1}</i>
                     </div>
                     <div className="game-card-copy">
@@ -281,6 +290,17 @@ export function GameLibrary({
           )}
         </div>
       </section>
+      {mode !== "pass" && (
+        <button
+          className="button subtle full"
+          style={{ marginTop: 24 }}
+          onClick={() => setMoreGames((v) => !v)}
+        >
+          {moreGames
+            ? "Show the new collection"
+            : "More games · the original five"}
+        </button>
+      )}
       <p className="library-bottom">
         Your room, your pace. Change games from the lobby without making
         everyone rejoin.

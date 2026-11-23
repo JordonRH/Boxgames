@@ -44,6 +44,7 @@ import "./style.css";
 import "./party.css";
 import "./library.css";
 import "./screen.css";
+import "./arcade.css";
 import { GameLibrary as Home } from "./game-library.js";
 import { ScreenApp, ScreenControls } from "./screen.js";
 import { PartyGame, type PartyProps } from "./party-games.js";
@@ -365,7 +366,11 @@ function App() {
           <p>
             Your name and connection status appear in the room. Choices are
             private until the round reveals them. Revealed results include
-            everyone’s allocations, forecasts, votes and scores.
+            answers, votes and scores. Submitted sketches stay in server memory
+            and become visible in the voting gallery; artists are named at the
+            reveal. Unsent sketches stay only on your device. Revealed sketch
+            images can remain in your browser cache for up to a minute after the
+            room closes.
           </p>
           <h2>The connection to this server</h2>
           <p>

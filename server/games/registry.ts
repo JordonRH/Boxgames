@@ -24,6 +24,7 @@ import { CharadesGame } from "./charades.js";
 import { CrowdGame } from "./crowd.js";
 import { SurvivalGame } from "./survival.js";
 import { BluffGame } from "./bluff.js";
+import { ArcadeGame, arcadeKinds } from "./arcade.js";
 const constructors = {
   "blank-slate": CardsGame,
   "clue-crew": CharadesGame,
@@ -224,10 +225,12 @@ export const gameRegistry = new Map<string, GameFactory>([
             players: { id: string; name: string }[],
             options?: GameOptions,
           ) =>
-            new constructors[summary.id as keyof typeof constructors](
-              players,
-              options,
-            ),
+            arcadeKinds[summary.id]
+              ? new ArcadeGame(players, summary.id, options)
+              : new constructors[summary.id as keyof typeof constructors](
+                  players,
+                  options,
+                ),
         },
       ] as [string, GameFactory],
   ),

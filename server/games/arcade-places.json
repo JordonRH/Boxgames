@@ -1,0 +1,300 @@
+{
+  "world": [
+    {
+      "name": "Reykjav\u00edk",
+      "lat": 64.143459,
+      "lon": -21.936546,
+      "country": "Iceland"
+    },
+    {
+      "name": "Ottawa",
+      "lat": 45.418643,
+      "lon": -75.701961,
+      "country": "Canada"
+    },
+    {
+      "name": "Hanoi",
+      "lat": 21.035273,
+      "lon": 105.848068,
+      "country": "Vietnam"
+    },
+    {
+      "name": "Madrid",
+      "lat": 40.401972,
+      "lon": -3.685297,
+      "country": "Spain"
+    },
+    {
+      "name": "Bangkok",
+      "lat": 13.751945,
+      "lon": 100.514699,
+      "country": "Thailand"
+    },
+    {
+      "name": "Lima",
+      "lat": -12.046067,
+      "lon": -77.052008,
+      "country": "Peru"
+    },
+    {
+      "name": "Seoul",
+      "lat": 37.568295,
+      "lon": 126.997785,
+      "country": "South Korea"
+    },
+    {
+      "name": "Berlin",
+      "lat": 52.523764,
+      "lon": 13.399603,
+      "country": "Germany"
+    },
+    {
+      "name": "Athens",
+      "lat": 37.985272,
+      "lon": 23.731375,
+      "country": "Greece"
+    },
+    {
+      "name": "Buenos Aires",
+      "lat": -34.610715,
+      "lon": -58.432513,
+      "country": "Argentina"
+    },
+    {
+      "name": "Auckland",
+      "lat": -36.848055,
+      "lon": 174.763027,
+      "country": "New Zealand"
+    },
+    {
+      "name": "New York",
+      "lat": 40.721562,
+      "lon": -73.995718,
+      "country": "United States of America"
+    },
+    {
+      "name": "London",
+      "lat": 51.501941,
+      "lon": -0.118668,
+      "country": "United Kingdom"
+    },
+    {
+      "name": "Istanbul",
+      "lat": 41.017602,
+      "lon": 28.974277,
+      "country": "Turkey"
+    },
+    {
+      "name": "Cape Town",
+      "lat": -33.918065,
+      "lon": 18.433042,
+      "country": "South Africa"
+    },
+    {
+      "name": "Rome",
+      "lat": 41.897902,
+      "lon": 12.481313,
+      "country": "Italy"
+    },
+    {
+      "name": "Beijing",
+      "lat": 39.90172,
+      "lon": 116.394201,
+      "country": "China"
+    },
+    {
+      "name": "Nairobi",
+      "lat": -1.281401,
+      "lon": 36.814711,
+      "country": "Kenya"
+    },
+    {
+      "name": "Cairo",
+      "lat": 30.051906,
+      "lon": 31.248022,
+      "country": "Egypt"
+    },
+    {
+      "name": "Tokyo",
+      "lat": 35.686963,
+      "lon": 139.749462,
+      "country": "Japan"
+    },
+    {
+      "name": "Paris",
+      "lat": 48.858092,
+      "lon": 2.352992,
+      "country": "France"
+    },
+    {
+      "name": "Rio de Janeiro",
+      "lat": -22.907308,
+      "lon": -43.212117,
+      "country": "Brazil"
+    },
+    {
+      "name": "Singapore",
+      "lat": 1.294979,
+      "lon": 103.853875,
+      "country": "Singapore"
+    }
+  ],
+  "australia": [
+    {
+      "name": "Bunbury",
+      "lat": -33.344284,
+      "lon": 115.650243,
+      "country": "Australia"
+    },
+    {
+      "name": "Ballarat",
+      "lat": -37.559582,
+      "lon": 143.840047,
+      "country": "Australia"
+    },
+    {
+      "name": "Wollongong",
+      "lat": -34.415381,
+      "lon": 150.890004,
+      "country": "Australia"
+    },
+    {
+      "name": "Geelong",
+      "lat": -38.167495,
+      "lon": 144.395634,
+      "country": "Australia"
+    },
+    {
+      "name": "Toowoomba",
+      "lat": -27.564533,
+      "lon": 151.95552,
+      "country": "Australia"
+    },
+    {
+      "name": "Mackay",
+      "lat": -21.143892,
+      "lon": 149.150007,
+      "country": "Australia"
+    },
+    {
+      "name": "Launceston",
+      "lat": -41.449836,
+      "lon": 147.130182,
+      "country": "Australia"
+    },
+    {
+      "name": "Broome",
+      "lat": -17.961771,
+      "lon": 122.230768,
+      "country": "Australia"
+    },
+    {
+      "name": "Kalgoorlie",
+      "lat": -30.735399,
+      "lon": 121.460018,
+      "country": "Australia"
+    },
+    {
+      "name": "Albany",
+      "lat": -35.016947,
+      "lon": 117.891605,
+      "country": "Australia"
+    },
+    {
+      "name": "Geraldton",
+      "lat": -28.76663,
+      "lon": 114.599971,
+      "country": "Australia"
+    },
+    {
+      "name": "Bendigo",
+      "lat": -36.759993,
+      "lon": 144.28002,
+      "country": "Australia"
+    },
+    {
+      "name": "Mount Isa",
+      "lat": -20.723865,
+      "lon": 139.490028,
+      "country": "Australia"
+    },
+    {
+      "name": "Rockhampton",
+      "lat": -23.363911,
+      "lon": 150.520001,
+      "country": "Australia"
+    },
+    {
+      "name": "Cairns",
+      "lat": -16.88784,
+      "lon": 145.763331,
+      "country": "Australia"
+    },
+    {
+      "name": "Darwin",
+      "lat": -12.425354,
+      "lon": 130.850039,
+      "country": "Australia"
+    },
+    {
+      "name": "Alice Springs",
+      "lat": -23.700996,
+      "lon": 133.880034,
+      "country": "Australia"
+    },
+    {
+      "name": "Canberra",
+      "lat": -35.283029,
+      "lon": 149.129026,
+      "country": "Australia"
+    },
+    {
+      "name": "Newcastle",
+      "lat": -32.929508,
+      "lon": 151.770249,
+      "country": "Australia"
+    },
+    {
+      "name": "Adelaide",
+      "lat": -34.933042,
+      "lon": 138.598059,
+      "country": "Australia"
+    },
+    {
+      "name": "Townsville",
+      "lat": -19.24995,
+      "lon": 146.769997,
+      "country": "Australia"
+    },
+    {
+      "name": "Brisbane",
+      "lat": -27.453085,
+      "lon": 153.033147,
+      "country": "Australia"
+    },
+    {
+      "name": "Hobart",
+      "lat": -42.850009,
+      "lon": 147.29503,
+      "country": "Australia"
+    },
+    {
+      "name": "Perth",
+      "lat": -31.953069,
+      "lon": 115.838053,
+      "country": "Australia"
+    },
+    {
+      "name": "Melbourne",
+      "lat": -37.818086,
+      "lon": 144.97307,
+      "country": "Australia"
+    },
+    {
+      "name": "Sydney",
+      "lat": -33.871373,
+      "lon": 151.212548,
+      "country": "Australia"
+    }
+  ]
+}

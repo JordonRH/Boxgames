@@ -41,12 +41,12 @@ test("library setup modes select a game and phone hosting; local turns require a
         }),
       ),
     );
-    assert.equal(document.querySelectorAll(".library-card").length, 5);
+    assert.equal(document.querySelectorAll(".library-card").length, 8);
     await tap(".library-card .primary");
-    assert.deepEqual(calls.at(-1), ["blackout-run", false]);
+    assert.deepEqual(calls.at(-1), ["time-tangle", false]);
     await tap("#tab-phone");
     await tap(".library-card .primary");
-    assert.deepEqual(calls.at(-1), ["blackout-run", true]);
+    assert.deepEqual(calls.at(-1), ["time-tangle", true]);
     await tap("#tab-pass");
     assert.equal(document.querySelectorAll(".library-card").length, 1);
     await tap(".library-card .primary");

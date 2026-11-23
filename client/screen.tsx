@@ -4,6 +4,7 @@ import QRCode from "qrcode";
 import { Cast, Copy, Maximize, Monitor, RefreshCw, X } from "lucide-react";
 import type { Ack, RoomView, Session } from "../shared/types.js";
 import { games } from "../shared/games.js";
+import { ArcadeStage } from "./arcade-games.js";
 import { GameClock } from "./party-games.js";
 interface Pairing {
   code: string;
@@ -446,6 +447,7 @@ export function ScreenStage({ room }: { room: RoomView }) {
             </section>
           ) : (
             <section className="tv-game-content">
+              {g.arcade && <ArcadeStage room={room} />}
               {g.survival && (
                 <>
                   <h1>

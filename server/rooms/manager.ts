@@ -614,6 +614,16 @@ export class RoomManager {
             .union([z.literal(45), z.literal(90), z.literal(0)])
             .optional(),
           difficulty: z.enum(["casual", "mixed", "hard"]).optional(),
+          drawingCategory: z
+            .enum([
+              "mixed",
+              "movies",
+              "games",
+              "sports",
+              "creatures",
+              "everyday",
+            ])
+            .optional(),
           clueMode: z.enum(["solo", "teams"]).optional(),
           teamTarget: z.number().int().min(5).max(30).optional(),
           carryScores: z.boolean().optional(),

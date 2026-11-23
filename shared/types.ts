@@ -1,3 +1,4 @@
+import type { ArcadeView, ArcadePrivate } from "./arcade.js";
 import type { PartySettings } from "./settings.js";
 export type Triple = [number, number, number];
 export type Rank = "largest" | "middle" | "smallest";
@@ -52,6 +53,7 @@ export interface KnowledgeRow {
   bluffPoints?: number;
 }
 export interface GameView {
+  arcade?: ArcadeView;
   waitingFor?: string[];
   notice?: string | null;
   gameKey?: string;
@@ -124,6 +126,7 @@ export interface GameView {
   };
 }
 export interface GameSummary {
+  featured?: boolean;
   id: string;
   title: string;
   tagline: string;
@@ -156,6 +159,7 @@ export interface RoomView {
     allocation?: Triple | null;
     forecast?: number | null;
     vote?: number | null;
+    arcade?: ArcadePrivate;
     submitted: boolean;
     survival?: {
       choice: string | null;

@@ -65,6 +65,10 @@ try {
   if (expected) assert.equal(info.revision, expected);
   const screenPage = await fetch(`${base}/screen`);
   assert.ok(screenPage.ok, "Shared-screen route must load");
+  assert.ok(
+    (await fetch(`${base}/maps/land.json`)).ok,
+    "Bundled map must load",
+  );
   const page = await fetch(base);
   assert.ok(page.ok);
   assert.match(
@@ -88,7 +92,21 @@ try {
       .get(host)
       .games.map((g) => g.id)
       .sort(),
-    ["blackout-run", "blank-slate", "clue-crew", "crowd-pick", "false-front"],
+    [
+      "blackout-run",
+      "blank-slate",
+      "clue-crew",
+      "crowd-pick",
+      "false-front",
+      "time-tangle",
+      "world-wander",
+      "road-trip",
+      "creature-check",
+      "odd-canvas",
+      "rare-find",
+      "mic-check",
+      "echo-box",
+    ].sort(),
   );
   assert.equal(states.get(host).playerLimit, null);
   const pair = await command(host, "host:screen", {});
@@ -112,6 +130,92 @@ try {
   }
   await sleep(1100);
   await command(host, "host:settings", { carryScores: true });
+  const arcadeKeys = [
+    "time-tangle",
+    "world-wander",
+    "road-trip",
+    "creature-check",
+    "odd-canvas",
+    "rare-find",
+    "mic-check",
+    "echo-box",
+  ];
+  for (const gameKey of arcadeKeys) {
+    await sleep(1100);
+    if (gameKey === "odd-canvas")
+      await command(host, "host:settings", { drawingCategory: "movies" });
+    await command(host, "host:game", { gameKey });
+    await command(host, "game:start", { commandId: randomUUID() });
+    await command(host, "game:advance", envelope(host));
+    const group = [host, ...players];
+    await until(
+      () =>
+        group.every((p) => states.get(p)?.game?.phase === "allocate") &&
+        states.get(display)?.game?.phase === "allocate",
+    );
+    assert.equal(states.get(display).private, null);
+    assert.equal(states.get(display).game.arcade.reveal, null);
+    for (const p of group) {
+      const a = states.get(p).game.arcade;
+      const payload =
+        a.kind === "year"
+          ? { year: 1990 }
+          : a.kind === "world"
+            ? { lat: 0, lon: 0 }
+            : a.kind === "australia"
+              ? { lat: -30, lon: 135 }
+              : a.kind === "rapid"
+                ? { checks: [true, false, true, false, true, false] }
+                : a.kind === "drawing"
+                  ? {
+                      strokes: [
+                        {
+                          color: 0,
+                          points: [
+                            [10, 10],
+                            [100, 100],
+                            [190, 40],
+                          ],
+                        },
+                      ],
+                    }
+                  : a.kind === "sound"
+                    ? { choiceId: a.choices[0].id }
+                    : { text: "An unlikely answer" };
+      await command(p, "game:submit", { ...envelope(p), ...payload });
+    }
+    if (gameKey === "odd-canvas" || gameKey === "mic-check") {
+      await until(
+        () =>
+          group.every((p) => states.get(p)?.game?.phase === "vote") &&
+          states.get(display)?.game?.phase === "vote",
+      );
+      if (gameKey === "odd-canvas") {
+        assert.equal(states.get(display).game.arcade.category, "movies");
+        const gallery = states.get(display).game.arcade.gallery;
+        assert.ok(gallery.every((g) => !g.authorId && !g.strokes));
+        const art = await fetch(
+          `${base}/api/art/${session.code}/${gallery[0].id}.svg`,
+        );
+        assert.ok(art.ok);
+        assert.match(art.headers.get("content-type") ?? "", /image\/svg\+xml/);
+      }
+      for (const p of group)
+        await command(p, "game:vote", {
+          ...envelope(p),
+          ...(gameKey === "odd-canvas"
+            ? { choiceId: states.get(p).private.arcade.choices[0] }
+            : { text: "Still unlikely" }),
+        });
+    }
+    await until(() => states.get(display)?.game?.phase === "reveal");
+    assert.equal(states.get(display).private, null);
+    assert.equal(states.get(display).game.arcade.reveal.rows.length, 4);
+    await sleep(1100);
+    await command(host, "game:end", envelope(host));
+    await command(host, "game:advance", envelope(host));
+    await until(() => group.every((p) => states.get(p)?.game === null));
+  }
   for (const gameKey of [
     "blank-slate",
     "crowd-pick",
@@ -292,6 +396,7 @@ try {
       assets: assets.length,
       players: 4,
       games: [
+        ...arcadeKeys,
         "blank-slate",
         "crowd-pick",
         "clue-crew",

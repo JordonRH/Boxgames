@@ -15,6 +15,7 @@ import {
 import type { RoomView, GameView } from "../shared/types.js";
 import { games as catalogue } from "../shared/games.js";
 import { SessionScores } from "./room-options.js";
+import { ArcadePanel } from "./arcade-games.js";
 import { KnowledgeGame } from "./knowledge-games.js";
 type Action = (event: string, data?: Record<string, unknown>) => Promise<void>;
 export interface PartyProps {
@@ -172,8 +173,12 @@ export function PartyGame({ room, busy, gameAction, end }: PartyProps) {
           </strong>
           <span>
             {g.waitingFor
+              .slice(0, 5)
               .map((id) => (id === room.playerId ? "You" : names(id)))
               .join(", ")}
+            {g.waitingFor.length > 5
+              ? ` + ${g.waitingFor.length - 5} more`
+              : ""}
           </span>
         </div>
       )}
@@ -202,15 +207,21 @@ export function PartyGame({ room, busy, gameAction, end }: PartyProps) {
             ))}
           </ol>
           <p>
-            {g.charades
-              ? "Big Got it and Pass buttons work on every device. No motion permissions or app needed."
-              : g.cards
-                ? "Your five cards are private. Only the played cards are revealed."
-                : g.survival
-                  ? "Everyone stays in, even at zero charge. Scores bank when both stages finish; the charge bonus is awarded when the host finishes round six."
-                  : g.bluff
-                    ? "Other players never see who wrote a bluff until the reveal. Matching bluffs share the credit. Missing answers abstain."
-                    : "No budgets. No predictions. Just tap one project."}
+            {g.arcade
+              ? "Your controller shows the next action. Submit once; the shared screen reveals the room’s results."
+              : g.charades
+                ? "Big Got it and Pass buttons work on every device. No motion permissions or app needed."
+                : g.arcade
+                  ? g.phase === "allocate"
+                    ? "Make your move"
+                    : "Second stage"
+                  : g.cards
+                    ? "Your five cards are private. Only the played cards are revealed."
+                    : g.survival
+                      ? "Everyone stays in, even at zero charge. Scores bank when both stages finish; the charge bonus is awarded when the host finishes round six."
+                      : g.bluff
+                        ? "Other players never see who wrote a bluff until the reveal. Matching bluffs share the credit. Missing answers abstain."
+                        : "No budgets. No predictions. Just tap one project."}
           </p>
           {g.phase === "instructions" && g.charades?.teams && (
             <TeamScores room={room} />
@@ -271,6 +282,13 @@ export function PartyGame({ room, busy, gameAction, end }: PartyProps) {
       ) : (
         g.phase !== "instructions" && (
           <>
+            {g.arcade && (
+              <ArcadePanel
+                room={room}
+                locked={locked}
+                gameAction={gameAction}
+              />
+            )}
             {(g.survival || g.bluff) && (
               <KnowledgeGame
                 room={room}
@@ -690,13 +708,21 @@ function TeamScores({ room }: { room: RoomView }) {
   );
 }
 function Scores({ room }: { room: RoomView }) {
+  const [all, setAll] = useState(false);
   if (room.game?.charades?.teams) return <TeamScores room={room} />;
   const sorted = [...room.players].sort((a, b) => b.score - a.score);
+  const visible = all
+    ? sorted
+    : sorted.filter((p, i) => i < 10 || p.id === room.playerId);
+  const ranks = new Map<number, number>();
+  sorted.forEach((p, i) => {
+    if (!ranks.has(p.score)) ranks.set(p.score, i + 1);
+  });
   return (
     <div className="simple-scores" aria-label="Scores">
-      {sorted.map((p, i) => (
+      {visible.map((p) => (
         <div className={p.id === room.playerId ? "your-score" : ""} key={p.id}>
-          <span>{i + 1}</span>
+          <span>{ranks.get(p.score)}</span>
           <strong>
             {p.name}
             {p.id === room.playerId ? " (you)" : ""}
@@ -707,6 +733,14 @@ function Scores({ room }: { room: RoomView }) {
           </b>
         </div>
       ))}
+      {sorted.length > 10 && (
+        <button
+          className="button subtle full"
+          onClick={() => setAll((v) => !v)}
+        >
+          {all ? "Show top 10 and my score" : "Show full scoreboard"}
+        </button>
+      )}
     </div>
   );
 }

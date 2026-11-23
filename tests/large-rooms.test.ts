@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
 import { io, type Socket } from "socket.io-client";
 import { createApp } from "../server/index.js";
+import { arcadeKinds } from "../server/games/arcade.js";
 import { CardsGame } from "../server/games/cards.js";
 import { CharadesGame } from "../server/games/charades.js";
 import type { Ack, RoomView, Session } from "../shared/types.js";
@@ -136,6 +137,7 @@ test("fifty real same-network controllers join one room, bulk-admit and play eve
       "false-front",
       "blank-slate",
       "clue-crew",
+      ...Object.keys(arcadeKinds),
     ]) {
       await wait(1100);
       await must(host, "host:game", { gameKey });
@@ -144,7 +146,50 @@ test("fifty real same-network controllers join one room, bulk-admit and play eve
       await until(() =>
         players.every((s) => states.get(s)?.game?.phase === "allocate"),
       );
-      if (gameKey === "clue-crew") {
+      if (states.get(host)!.game!.arcade) {
+        for (const p of players) {
+          const a = states.get(p)!.game!.arcade!;
+          const data =
+            a.kind === "year"
+              ? { year: 1990 }
+              : a.kind === "world"
+                ? { lat: 0, lon: 0 }
+                : a.kind === "australia"
+                  ? { lat: -30, lon: 135 }
+                  : a.kind === "rapid"
+                    ? { checks: [true, false, true, false, true, false] }
+                    : a.kind === "drawing"
+                      ? {
+                          strokes: [
+                            {
+                              color: 0,
+                              points: [
+                                [10, 10],
+                                [90, 90],
+                              ],
+                            },
+                          ],
+                        }
+                      : a.kind === "sound"
+                        ? { choiceId: a.choices![0].id }
+                        : { text: "An unlikely answer" };
+          await must(p, "game:submit", { ...cmd(p), ...data });
+        }
+        if (gameKey === "odd-canvas" || gameKey === "mic-check") {
+          await until(() =>
+            players.every((p) => states.get(p)!.game!.phase === "vote"),
+          );
+          for (const p of players)
+            await must(p, "game:vote", {
+              ...cmd(p),
+              ...(gameKey === "odd-canvas"
+                ? { choiceId: states.get(p)!.private!.arcade!.choices![0] }
+                : { text: "Still unlikely" }),
+            });
+        }
+        await until(() => states.get(host)!.game!.phase === "reveal");
+        assert.equal(states.get(host)!.game!.arcade!.reveal!.rows.length, 50);
+      } else if (gameKey === "clue-crew") {
         assert.equal(states.get(host)!.game!.rounds, 12);
         const guesser = players.find(
           (s) =>

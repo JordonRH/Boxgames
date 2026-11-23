@@ -18,6 +18,7 @@ export type PublicGame = Omit<
   "deadline" | "remainingMs" | "paused" | "pauseReason"
 >;
 export interface GameEngine {
+  artwork?(id: string): import("../../shared/arcade.js").InkStroke[] | null;
   readonly id: string;
   phaseId: string;
   readonly phase: GameView["phase"];

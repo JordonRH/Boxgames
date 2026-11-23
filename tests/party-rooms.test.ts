@@ -5,6 +5,7 @@ import { randomUUID } from "node:crypto";
 import { io, type Socket } from "socket.io-client";
 import { createApp } from "../server/index.js";
 import type { Ack, RoomView, Session } from "../shared/types.js";
+import { games as catalogue } from "../shared/games.js";
 const pause = (ms: number) => new Promise((r) => setTimeout(r, ms));
 async function until(fn: () => boolean) {
   for (let i = 0; i < 300; i++) {
@@ -76,13 +77,10 @@ for (const gameKey of [
           .get(host)!
           .games.map((g) => g.id)
           .sort(),
-        [
-          "blackout-run",
-          "blank-slate",
-          "clue-crew",
-          "crowd-pick",
-          "false-front",
-        ],
+        catalogue
+          .filter((g) => !g.hidden)
+          .map((g) => g.id)
+          .sort(),
       );
       const pair = await must<{ code: string; url: string; expires: number }>(
         host,

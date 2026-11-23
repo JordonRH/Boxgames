@@ -1,5 +1,7 @@
 import type { GameSummary } from "./types.js";
+import { arcadeGames } from "./arcade-catalogue.js";
 export const games: GameSummary[] = [
+  ...arcadeGames,
   {
     id: "blackout-run",
     title: "Blackout Run",
