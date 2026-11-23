@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { io, type Socket } from "socket.io-client";
+import { connectionOptions } from "./connection.js";
 import QRCode from "qrcode";
 import { Cast, Copy, Maximize, Monitor, RefreshCw, X } from "lucide-react";
 import type { Ack, RoomView, Session } from "../shared/types.js";
@@ -174,7 +175,7 @@ export function ScreenApp() {
     [full, setFull] = useState(false);
   const socket = useRef<Socket | null>(null);
   useEffect(() => {
-    const s = io({ autoConnect: false });
+    const s = io(connectionOptions);
     socket.current = s;
     const restore = async () => {
       setConnected(true);

@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { io } from "socket.io-client";
+import { connectionOptions } from "./connection.js";
 import QRCode from "qrcode";
 import {
   Box,
@@ -51,7 +52,7 @@ import { PartyGame, type PartyProps } from "./party-games.js";
 import { RoomOptions, SessionScores } from "./room-options.js";
 import { games as catalogue } from "../shared/games.js";
 
-const socket = io({ autoConnect: false });
+const socket = io(connectionOptions);
 const saved = () => {
   try {
     return JSON.parse(

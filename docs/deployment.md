@@ -92,3 +92,11 @@ The existing dashboard entry stays at `https://boxgame.jrhtechservices.party`; n
 ## Bundled map and ephemeral artwork routes
 
 `/maps/land.json` is a locally bundled public-domain map asset, delivered by the same web entry service. `/api/art/<room-code>/<random-art-id>.svg` serves a sketch only during the drawing game's voting/reveal phases, after submission; it does not write files or mount storage. Gallery art IDs are random and carry no author name before reveal. SVG is generated from validated numeric strokes and a fixed palette, with `Cache-Control: private, max-age=60`. Public access uses the existing hostname/origin; no additional port, route, service or tunnel is required. Ordinary application logging still records no names, answers, sketch bodies, gallery URLs or session credentials.
+
+## Public polling follow-up (23 November 2026)
+
+The production revision `8ffb5a7` passed the complete thirteen-game public check with WebSockets. The same mixed polling/WebSocket check passed against the local production origin, while forced polling connections intermittently reported transport errors through the public hostname. The application remained healthy with no container restart. This isolates a difference on the public network path; it does not prove a particular proxy setting is responsible. No tunnel/route configuration or logs were inspected.
+
+Clients now try WebSockets first, with Socket.IO's `tryAllTransports` retaining polling fallback for networks that refuse WebSockets. CI continues to exercise both transports. The public smoke script accepts a final `websocket` argument for an accurate WebSocket-only result; omit it for the mixed check.
+
+**Pending operator action:** review the public ingress/reverse-proxy treatment of `/socket.io/` GET and POST requests. Pass them through to `http://boxgame:3000` on `aitrace_proxy`, with no caching, buffering or challenge pages, and preserve WebSocket upgrades. Then rerun `node scripts/smoke.mjs https://boxgame.jrhtechservices.party https://boxgame.jrhtechservices.party <deployed-sha>` to verify forced polling as well. The AI must not inspect or alter tunnel/route configuration. Public polling remains pending until that check passes; WebSocket success alone is not proof of fallback coverage.

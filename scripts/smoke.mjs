@@ -6,6 +6,9 @@ import { io } from "socket.io-client";
 const base = process.argv[2] ?? "http://127.0.0.1:8100";
 const origin = process.argv[3] ?? "http://localhost:8100";
 const expected = process.argv[4];
+const strategy = process.argv[5] ?? "mixed";
+if (!["mixed", "websocket"].includes(strategy))
+  throw new Error("Use mixed or websocket transport mode.");
 const sockets = [],
   states = new Map();
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -26,7 +29,7 @@ async function command(s, event, payload) {
 }
 async function connect() {
   // Alternate normal browser polling (no Origin on same-origin GET) and WebSockets.
-  const polling = sockets.length % 2 === 0;
+  const polling = strategy === "mixed" && sockets.length % 2 === 0;
   const s = io(base, {
     forceNew: true,
     reconnection: false,
@@ -409,7 +412,8 @@ try {
       hostPlayer: true,
       privateViews: true,
       sharedScreen: true,
-      transports: ["polling", "websocket"],
+      transports:
+        strategy === "mixed" ? ["polling", "websocket"] : ["websocket"],
     }),
   );
 } finally {
