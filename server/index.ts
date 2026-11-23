@@ -187,7 +187,7 @@ export function createApp(
   app.get("/icon.svg", (_req, res) =>
     res.sendFile(path.join(clientDir, "icon.svg")),
   );
-  app.get(["/", "/join", "/host", "/privacy"], (_req, res) =>
+  app.get(["/", "/join", "/host", "/privacy", "/screen", "/screen/"], (_req, res) =>
     res.sendFile(path.join(clientDir, "index.html")),
   );
   app.use((_req, res) => {

@@ -63,6 +63,8 @@ try {
   assert.ok(health.ok);
   const info = await health.json();
   if (expected) assert.equal(info.revision, expected);
+  const screenPage = await fetch(`${base}/screen`);
+  assert.ok(screenPage.ok, "Shared-screen route must load");
   const page = await fetch(base);
   assert.ok(page.ok);
   assert.match(
