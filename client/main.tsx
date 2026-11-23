@@ -42,6 +42,10 @@ import type {
 } from "../shared/types.js";
 import "./style.css";
 import "./party.css";
+import "./library.css";
+import "./screen.css";
+import { GameLibrary as Home } from "./game-library.js";
+import { ScreenApp, ScreenControls } from "./screen.js";
 import { PartyGame, type PartyProps } from "./party-games.js";
 import { RoomOptions, SessionScores } from "./room-options.js";
 import { games as catalogue } from "../shared/games.js";
@@ -261,7 +265,7 @@ function App() {
     setBusy(true);
     setError("");
     try {
-      await emit(event, data);
+      return await emit<any>(event, data);
     } catch (e) {
       if ((e as Error & { code?: string }).code !== "stale_word")
         setError((e as Error).message);
@@ -269,7 +273,7 @@ function App() {
       setBusy(false);
     }
   };
-  const create = async () => {
+  const create = async (game = "blank-slate", phone = false) => {
     setBusy(true);
     setError("");
     try {
@@ -278,6 +282,8 @@ function App() {
       sessionRef.current = next;
       setSession(next);
       navigate("/host");
+      await emit("host:game", { gameKey: game });
+      if (phone) await emit("host:play", { name: "Me" });
     } catch (e) {
       setError((e as Error).message);
     } finally {
@@ -458,6 +464,13 @@ function App() {
             gameAction={gameAction}
             end={() => openModal("end")}
           />
+          {room.role === "host" && (
+            <ScreenControls
+              room={room}
+              busy={busy || !connected || !ready}
+              request={action}
+            />
+          )}
           <Expiry room={room} />
         </>
       ) : route === "/join" ? (
@@ -601,199 +614,6 @@ function App() {
     </div>
   );
 }
-function Home({
-  create,
-  busy,
-  navigate,
-  code,
-  setCode,
-}: {
-  create: () => void;
-  busy: boolean;
-  navigate: (p: string) => void;
-  code: string;
-  setCode: (s: string) => void;
-}) {
-  return (
-    <>
-      <main className="home">
-        <section className="hero">
-          <div className="hero-copy">
-            <p className="eyebrow">
-              <span className="mini-star">✳</span> LESS SETUP. MORE GOOD TIMES.
-            </p>
-            <h1>
-              Good company.
-              <br />
-              Questionable
-              <br />
-              <span className="hero-highlight">decisions.</span>
-            </h1>
-            <p className="hero-description">
-              {catalogue.length} original party games. Everyone’s phone or PC.
-              <br />A room full of original games and very strong opinions.
-            </p>
-            <div className="hero-actions">
-              <Button
-                className="primary large"
-                onClick={create}
-                disabled={busy}
-              >
-                <Monitor size={21} />
-                {busy ? "Getting ready…" : "Host a game"}
-              </Button>
-              <span className="cta-note">
-                No downloads.
-                <br />
-                No accounts. You’re in.
-              </span>
-            </div>
-            <div className="device-note">
-              <Smartphone size={16} />
-              <span>Phones, tablets & computers welcome</span>
-              <span className="divider" />
-              <VolumeX size={16} />
-              <span>Sound optional</span>
-            </div>
-          </div>
-          <div
-            className="hero-art"
-            aria-label={`${catalogue.length} original party games: trivia, bluffing, cards, word guessing, and quick votes`}
-          >
-            <div className="art-grid" />
-            <div className="art-caption">
-              <span className="tiny-dot" /> ON THE TABLE TONIGHT
-            </div>
-            <div className="game-preview">
-              <div className="preview-top">
-                <span className="pill dark-pill">
-                  <Box size={14} /> PICK A GAME
-                </span>
-                <span className="preview-players">3–8 players</span>
-              </div>
-              <h2>
-                Blank
-                <br />
-                Slate<span>✳</span>
-              </h2>
-              <p>Play a card. Get a laugh.</p>
-              <div className="crate-stage">
-                <div className="crate crate-one">
-                  <Box size={62} />
-                </div>
-                <div className="crate crate-two">
-                  <Box size={62} />
-                </div>
-                <div className="crate crate-three">
-                  <Box size={62} />
-                </div>
-                <span className="stage-spark spark-one">✦</span>
-                <span className="stage-spark spark-two">✦</span>
-                <div className="orbit-line" />
-              </div>
-              <div className="preview-bottom">
-                <span>
-                  {catalogue.length} games. One room.
-                  <br />
-                  <strong>Which one are we playing?</strong>
-                </span>
-                <span className="round-sticker">
-                  <Sparkles size={19} />
-                </span>
-              </div>
-            </div>
-            <div className="floating-note">
-              <span className="note-icon">
-                <CheckCheck size={20} />
-              </span>
-              <span>
-                Everyone’s in.
-                <br />
-                <strong>Let’s make some decisions.</strong>
-              </span>
-            </div>
-            <span className="art-label">YOUR PHONE IS YOUR CONTROLLER</span>
-          </div>
-        </section>
-        <section className="home-game-list" aria-label="Games available">
-          {catalogue.map((game) => (
-            <article key={game.id} className={`home-game option-${game.color}`}>
-              <span>
-                {game.minPlayers}–8 PLAYERS · {game.minutes}
-              </span>
-              <h2>{game.title}</h2>
-              <p>{game.description}</p>
-            </article>
-          ))}
-        </section>
-        <section className="join-strip">
-          <div>
-            <span className="strip-icon">
-              <ScanLine size={26} />
-            </span>
-            <div>
-              <h2>Already got a room?</h2>
-              <p>Enter the code on the big screen.</p>
-            </div>
-          </div>
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              navigate(`/join?code=${encodeURIComponent(code)}`);
-            }}
-          >
-            <label className="sr-only" htmlFor="quick-code">
-              Room code
-            </label>
-            <input
-              id="quick-code"
-              placeholder="ROOM CODE"
-              autoComplete="off"
-              maxLength={6}
-              autoCapitalize="characters"
-              value={code}
-              onChange={(e) =>
-                setCode(e.target.value.toUpperCase().replace(/[^A-Z2-9]/g, ""))
-              }
-            />
-            <Button className="light" disabled={code.length !== 6}>
-              Join room
-            </Button>
-          </form>
-        </section>
-        <section className="how">
-          <div className="section-intro">
-            <p className="eyebrow">THE WHOLE PLAN</p>
-            <h2>
-              Less “how does this work?”
-              <br />
-              More “one more round.”
-            </h2>
-          </div>
-          <div className="how-item">
-            <Monitor />
-            <h3>Claim the big screen.</h3>
-            <p>Host on a laptop, desktop, or a browser connected to your TV.</p>
-          </div>
-          <div className="how-item">
-            <ScanLine />
-            <h3>Bring your own screen.</h3>
-            <p>Scan the QR or type the code. Pick a name and you’re ready.</p>
-          </div>
-          <div className="how-item">
-            <PartyPopper />
-            <h3>Make a night of it.</h3>
-            <p>
-              Trivia, bluffs, cards, clues and quick votes. Choose a game and
-              get straight into it.
-            </p>
-          </div>
-        </section>
-      </main>
-    </>
-  );
-}
-
 function Expiry({ room }: { room: RoomView }) {
   const [now, setNow] = useState(Date.now());
   useEffect(() => {
@@ -1848,4 +1668,6 @@ function Final({
   );
 }
 
-createRoot(document.getElementById("root")!).render(<App />);
+createRoot(document.getElementById("root")!).render(
+  /^\/screen\/?$/.test(location.pathname) ? <ScreenApp /> : <App />,
+);

@@ -84,6 +84,32 @@ for (const gameKey of [
           "false-front",
         ],
       );
+      const pair = await must<{ code: string; url: string; expires: number }>(
+        host,
+        "host:screen",
+        {},
+      );
+      assert.ok(pair.url.endsWith(`/screen#${pair.code}`));
+      assert.ok(pair.expires > Date.now());
+      let display = await connect();
+      const displaySession = await must<Session>(display, "display:join", {
+        code: pair.code,
+      });
+      const consumed = await connect();
+      assert.equal(
+        (await request(consumed, "display:join", { code: pair.code })).ok,
+        false,
+      );
+      assert.equal(
+        (await request(consumed, "display:join", { code: credentials.code }))
+          .ok,
+        false,
+        "player codes cannot pair screens",
+      );
+      assert.equal(states.get(display)!.role, "display");
+      assert.equal(states.get(display)!.private, null);
+      assert.deepEqual(states.get(display)!.pending, []);
+      assert.equal(states.get(host)!.displayCount, 1);
       await must(host, "host:play", { name: "Playing host" });
       const hostId = states.get(host)!.playerId!;
       assert.ok(hostId);
@@ -126,14 +152,57 @@ for (const gameKey of [
       );
       await must(host, "game:start", { commandId: randomUUID() });
       await until(() => states.get(host)!.game?.gameKey === gameKey);
+      await until(() => states.get(display)?.game?.gameKey === gameKey);
+      assert.equal(states.get(display)!.private, null);
+      assert.equal(states.get(display)!.playerId, null);
+      assert.equal(
+        (await request(display, "host:play", { name: "Imposter" })).ok,
+        false,
+      );
       const cmd = (s: Socket) => ({
         commandId: randomUUID(),
         gameId: states.get(s)!.game!.id,
         phaseId: states.get(s)!.game!.phaseId,
       });
+      assert.equal(
+        (await request(display, "game:advance", cmd(display))).ok,
+        false,
+      );
+      assert.equal(
+        (await request(display, "game:pause", cmd(display))).ok,
+        false,
+      );
+      assert.equal(
+        (
+          await request(display, "game:submit", {
+            ...cmd(display),
+            cardId: "forged",
+          })
+        ).ok,
+        false,
+      );
       await must(host, "game:advance", cmd(host));
       await until(() =>
         others.every((p) => states.get(p.socket)?.game?.phase === "allocate"),
+      );
+      await until(() => states.get(display)?.game?.phase === "allocate");
+      assert.equal(
+        states.get(display)!.private,
+        null,
+        "shared screen must never receive private controller state",
+      );
+      display.disconnect();
+      display = await connect();
+      await must(display, "room:resume", {
+        roomId: displaySession.roomId,
+        token: displaySession.token,
+      });
+      assert.equal(states.get(display)!.role, "display");
+      assert.equal(states.get(display)!.private, null);
+      assert.equal(
+        states.get(display)!.game!.paused,
+        false,
+        "display loss does not pause the game",
       );
       assert.equal(states.get(host)!.role, "host");
       assert.equal(states.get(host)!.playerId, hostId);
@@ -271,13 +340,11 @@ for (const gameKey of [
       await pause(1100);
       await must(host, "game:end", cmd(host));
       const finishedId = states.get(host)!.game!.id;
-      const totals = states
-        .get(host)!
-        .standings!.map((p) => ({
-          id: p.id,
-          points: p.points,
-          games: p.games,
-        }));
+      const totals = states.get(host)!.standings!.map((p) => ({
+        id: p.id,
+        points: p.points,
+        games: p.games,
+      }));
       const replayCommand = cmd(host);
       assert.equal(
         (await request(others[0].socket, "game:rematch", cmd(others[0].socket)))
@@ -290,13 +357,11 @@ for (const gameKey of [
       assert.equal(states.get(host)!.playerId, hostId);
       assert.equal(states.get(host)!.settings!.carryScores, true);
       assert.deepEqual(
-        states
-          .get(host)!
-          .standings!.map((p) => ({
-            id: p.id,
-            points: p.points,
-            games: p.games,
-          })),
+        states.get(host)!.standings!.map((p) => ({
+          id: p.id,
+          points: p.points,
+          games: p.games,
+        })),
         totals,
       );
       const rematchId = states.get(host)!.game!.id;
@@ -313,6 +378,17 @@ for (const gameKey of [
       await must(host, "host:remove", { id: hostId });
       assert.equal(states.get(host)!.role, "host");
       assert.equal(states.get(host)!.playerId, null);
+      await must(host, "host:screen:revoke", {});
+      assert.equal(
+        (
+          await request(display, "room:resume", {
+            roomId: displaySession.roomId,
+            token: displaySession.token,
+          })
+        ).ok,
+        false,
+      );
+      assert.equal(states.get(host)!.displayCount, 0);
       await must(host, "room:close", {});
     } finally {
       sockets.forEach((s) => s.disconnect());

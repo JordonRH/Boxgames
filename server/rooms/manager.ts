@@ -74,6 +74,10 @@ export interface Room {
   players: Map<string, Player>;
   pending: Map<string, Pending>;
   game: GameEngine | null;
+  displays: Map<
+    string,
+    { hash: string; socketId: string | null; expires: number | null }
+  >;
   selectedGame: string;
   settings: PartySettings;
   contentHistory: ContentHistory;
@@ -116,6 +120,7 @@ export class RoomManager {
   readonly rooms = new Map<string, Room>();
   readonly codes = new Map<string, string>();
   readonly quarantine = new Map<string, number>();
+  readonly screenCodes = new Map<string, { roomId: string; expires: number }>();
   readonly limits = new Limiter();
   private timer: ReturnType<typeof setInterval>;
   constructor(
@@ -154,9 +159,11 @@ export class RoomManager {
               ? 120
               : event === "room:create"
                 ? 5
-                : event === "room:join"
-                  ? 30
-                  : 600;
+                : event === "display:join"
+                  ? 10
+                  : event === "room:join"
+                    ? 30
+                    : 600;
           const window = event === "room:create" ? 600000 : 60000;
           if (
             !this.limits.take(
@@ -223,6 +230,7 @@ export class RoomManager {
           players: new Map(),
           pending: new Map(),
           game: null,
+          displays: new Map(),
           selectedGame: defaultGame,
           settings: defaultSettings(),
           contentHistory: new Map(),
@@ -252,6 +260,82 @@ export class RoomManager {
         role: "host",
       } satisfies Session;
     });
+    on("host:screen", z.object({}).strict(), () => {
+      const room = this.host(socket);
+      if (room.displays.size >= 2)
+        throw new Fault(
+          "screen_limit",
+          "Two screens are already paired. Disconnect them before pairing another.",
+        );
+      for (const [code, link] of this.screenCodes)
+        if (link.roomId === room.id) this.screenCodes.delete(code);
+      let code = this.code();
+      for (let tries = 0; this.screenCodes.has(code) && tries < 20; tries++)
+        code = this.code();
+      if (this.screenCodes.has(code))
+        throw new Fault("server_busy", "Try pairing again.");
+      const expires = this.clock() + 120000;
+      this.screenCodes.set(code, { roomId: room.id, expires });
+      return { code, expires, url: `${this.config.origin}/screen#${code}` };
+    });
+    on("host:screen:revoke", z.object({}).strict(), () => {
+      const room = this.host(socket);
+      for (const display of room.displays.values()) {
+        const s = this.io.sockets.sockets.get(display.socketId ?? "");
+        if (s) {
+          s.emit("room:closed", {
+            message: "The host disconnected the shared screens.",
+          });
+          s.data = {};
+        }
+      }
+      room.displays.clear();
+      for (const [code, link] of this.screenCodes)
+        if (link.roomId === room.id) this.screenCodes.delete(code);
+      this.broadcast(room);
+      return {};
+    });
+    on(
+      "display:join",
+      z
+        .object({
+          code: z
+            .string()
+            .trim()
+            .toUpperCase()
+            .regex(/^[23456789ABCDEFGHJKLMNPQRSTUVWXYZ]{6}$/),
+        })
+        .strict(),
+      ({ code }) => {
+        if (socket.data.roomId)
+          throw new Fault("already_joined", "Leave the current room first.");
+        const link = this.screenCodes.get(code),
+          room = link && this.rooms.get(link.roomId);
+        if (!link || link.expires <= this.clock() || !room)
+          throw new Fault(
+            "screen_unavailable",
+            "That screen code expired or was used. Ask the host for a new one.",
+          );
+        if (room.displays.size >= 2)
+          throw new Fault("screen_limit", "This room already has two screens.");
+        const raw = token(),
+          displayId = id();
+        this.screenCodes.delete(code);
+        room.displays.set(displayId, {
+          hash: hash(raw),
+          socketId: socket.id,
+          expires: null,
+        });
+        socket.data = { roomId: room.id, role: "display", displayId };
+        this.broadcast(room);
+        return {
+          roomId: room.id,
+          code: room.code,
+          token: raw,
+          role: "display",
+        } satisfies Session;
+      },
+    );
     on(
       "room:join",
       z
@@ -363,7 +447,20 @@ export class RoomManager {
         } else {
           const p = [...room.players.values()].find((p) => p.hash === h);
           const pending = [...room.pending.values()].find((p) => p.hash === h);
-          if (p && (p.expires === null || p.expires > this.clock())) {
+          const display = [...room.displays].find(
+            ([, d]) =>
+              d.hash === h && (d.expires === null || d.expires > this.clock()),
+          );
+          if (display) {
+            const [displayId, d] = display,
+              old = d.socketId;
+            d.socketId = socket.id;
+            d.expires = null;
+            role = "display";
+            if (old && old !== socket.id)
+              this.io.sockets.sockets.get(old)?.disconnect(true);
+            socket.data.displayId = displayId;
+          } else if (p && (p.expires === null || p.expires > this.clock())) {
             const old = p.socketId;
             p.socketId = socket.id;
             p.expires = null;
@@ -384,7 +481,12 @@ export class RoomManager {
               "Your seat expired or was removed. Ask the host about joining again.",
             );
         }
-        socket.data = { roomId: room.id, role, playerId };
+        socket.data = {
+          roomId: room.id,
+          role,
+          playerId,
+          ...(role === "display" ? { displayId: socket.data.displayId } : {}),
+        };
         room.emptySince = null;
         room.activity = this.clock();
         this.syncPause(room);
@@ -401,7 +503,11 @@ export class RoomManager {
       const room = this.member(socket);
       if (socket.data.role === "host")
         this.close(room, "The host closed this room.");
-      else {
+      else if (socket.data.role === "display") {
+        room.displays.delete(socket.data.displayId);
+        socket.data = {};
+        this.broadcast(room);
+      } else {
         this.remove(room, socket.data.playerId, "You left the room.");
         this.syncPause(room);
         this.complete(room);
@@ -700,6 +806,11 @@ export class RoomManager {
         }
       for (const p of room.pending.values())
         if (p.socketId === socket.id) p.socketId = null;
+      for (const display of room.displays.values())
+        if (display.socketId === socket.id) {
+          display.socketId = null;
+          display.expires = this.clock() + 300000;
+        }
       this.syncPause(room);
       this.broadcast(room);
     });
@@ -712,6 +823,11 @@ export class RoomManager {
         "Your room ended or the server restarted.",
       );
     if (socket.data.role === "host" && room.hostSocket === socket.id)
+      return room;
+    if (
+      socket.data.role === "display" &&
+      room.displays.get(socket.data.displayId)?.socketId === socket.id
+    )
       return room;
     if (
       socket.data.role === "player" &&
@@ -750,8 +866,8 @@ export class RoomManager {
   }
   private act(socket: Socket, data: GameCommand, fn: (r: Room) => void) {
     const room = this.member(socket);
-    if (socket.data.role === "pending")
-      throw new Fault("forbidden", "Wait for the host to admit you.");
+    if (socket.data.role === "pending" || socket.data.role === "display")
+      throw new Fault("forbidden", "This screen cannot control the game.");
     const key = `${socket.data.playerId ?? "host"}:${data.commandId}`;
     if (room.receipts.has(key)) return room.receipts.get(key);
     if (
@@ -937,9 +1053,11 @@ export class RoomManager {
   close(room: Room, message: string) {
     for (const socketId of [
       room.hostSocket,
-      ...[...room.players.values(), ...room.pending.values()].map(
-        (p) => p.socketId,
-      ),
+      ...[
+        ...room.players.values(),
+        ...room.pending.values(),
+        ...room.displays.values(),
+      ].map((p) => p.socketId),
     ]) {
       const s = this.io.sockets.sockets.get(socketId ?? "");
       if (s) {
@@ -947,6 +1065,8 @@ export class RoomManager {
         s.data = {};
       }
     }
+    for (const [code, link] of this.screenCodes)
+      if (link.roomId === room.id) this.screenCodes.delete(code);
     this.rooms.delete(room.id);
     this.codes.delete(room.code);
     this.quarantine.set(room.code, this.clock() + 1800000);
@@ -962,6 +1082,11 @@ export class RoomManager {
         this.io.sockets.sockets
           .get(p.socketId)
           ?.emit("room:state", this.view(room, "player", p.id));
+    for (const display of room.displays.values())
+      if (display.socketId)
+        this.io.sockets.sockets
+          .get(display.socketId)
+          ?.emit("room:state", this.view(room, "display"));
     for (const p of room.pending.values())
       if (p.socketId)
         this.io.sockets.sockets
@@ -971,7 +1096,8 @@ export class RoomManager {
   view(room: Room, role: RoomView["role"], playerId?: string): RoomView {
     if (role === "host") playerId = room.hostPlayerId ?? undefined;
     const g = room.game;
-    const privateView = g?.privateView(playerId) ?? null;
+    const privateView =
+      role === "display" ? null : (g?.privateView(playerId) ?? null);
     return {
       id: room.id,
       code: room.code,
@@ -979,6 +1105,8 @@ export class RoomManager {
       playerId: playerId ?? null,
       locked: room.locked,
       hostConnected: !!room.hostSocket,
+      displayCount: [...room.displays.values()].filter((d) => d.socketId)
+        .length,
       players:
         role === "pending"
           ? []
@@ -1057,6 +1185,8 @@ export class RoomManager {
   tick() {
     const now = this.clock();
     this.limits.sweep(now);
+    for (const [code, link] of this.screenCodes)
+      if (link.expires <= now) this.screenCodes.delete(code);
     for (const [code, until] of this.quarantine)
       if (until <= now) this.quarantine.delete(code);
     for (const room of [...this.rooms.values()]) {
@@ -1069,6 +1199,11 @@ export class RoomManager {
         continue;
       }
       let changed = false;
+      for (const [id, display] of room.displays)
+        if (display.expires !== null && display.expires <= now) {
+          room.displays.delete(id);
+          changed = true;
+        }
       for (const p of [...room.pending.values()])
         if (p.expires <= now) {
           this.remove(

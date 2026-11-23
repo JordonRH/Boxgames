@@ -137,10 +137,11 @@ export interface GameSummary {
 export interface RoomView {
   id: string;
   code: string;
-  role: "host" | "player" | "pending";
+  role: "host" | "player" | "pending" | "display";
   playerId: string | null;
   locked: boolean;
   hostConnected: boolean;
+  displayCount?: number;
   players: PlayerView[];
   pending: { id: string; name: string }[];
   settings?: PartySettings;
@@ -190,7 +191,7 @@ export interface Session {
   roomId: string;
   code: string;
   token: string;
-  role: "host" | "player" | "pending";
+  role: "host" | "player" | "pending" | "display";
 }
 export type Ack<T = unknown> =
   | { ok: true; data: T }

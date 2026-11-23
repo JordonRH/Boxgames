@@ -14,9 +14,9 @@ while true; do
     base_url="$repository/releases/download/boxgame-$release_sha"
     if curl -fsSL --retry 2 --connect-timeout 10 --max-time 30 "$base_url/boxgame-release.sha256" -o "$release_path/boxgame-release.sha256" 2>/dev/null; then
       echo "Verified CI release available: $release_sha"
-      if curl -fsSL --retry 2 --connect-timeout 10 --max-time 600 "$base_url/boxgame-release.tar.gz" -o "$release_path/boxgame-release.tar.gz" 2>/dev/null &&
+      if curl -fsSL --retry 1 --connect-timeout 10 --max-time 300 "$base_url/boxgame-release.tar.gz" -o "$release_path/boxgame-release.tar.gz" 2>/dev/null &&
          (cd "$release_path" && checksum_line="$(cat boxgame-release.sha256)" && [[ "$checksum_line" =~ ^[a-f0-9]{64}[[:space:]][[:space:]]boxgame-release\.tar\.gz$ ]] && sha256sum --check --status boxgame-release.sha256) &&
-         tar -tzf "$release_path/boxgame-release.tar.gz" | awk '$0!="./" && $0!="./compose.yml" && $0!="./scripts/" && $0!="./scripts/deploy-image.sh" && $0!="./image.tar.gz" {bad=1} END{exit bad}' &&
+         tar -tzf "$release_path/boxgame-release.tar.gz" | awk '$0!="./" && $0!="./compose.yml" && $0!="./scripts/" && $0!="./scripts/deploy-image.sh" && $0!="./scripts/jrh-compliance.py" && $0!="./image.tar.gz" {bad=1} END{exit bad}' &&
          tar -tvzf "$release_path/boxgame-release.tar.gz" | awk 'substr($1,1,1)!="-" && substr($1,1,1)!="d" {bad=1} END{exit bad}'; then
         tar --no-same-owner --no-same-permissions -xzf "$release_path/boxgame-release.tar.gz" -C "$release_path"
         if bash "$release_path/scripts/deploy-image.sh" "$release_path" "$release_sha"; then

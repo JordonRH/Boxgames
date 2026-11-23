@@ -1,0 +1,311 @@
+.screen-tools {
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  padding: 22px;
+  margin: 24px 0;
+  background: var(--panel);
+}
+.screen-tools > div:first-child {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.screen-tools h2 {
+  font-size: 1.1rem;
+  letter-spacing: -0.02em;
+}
+.screen-tools > div > span {
+  color: var(--lime);
+  font-size: 0.8rem;
+  margin-left: auto;
+}
+.screen-tools > p {
+  font-size: 0.85rem;
+  margin: 12px 0;
+}
+.screen-tools small {
+  display: block;
+  color: var(--muted);
+  margin: 10px 0;
+  line-height: 1.6;
+}
+.screen-tool-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.screen-pair-code {
+  display: block;
+  font-size: 2.6rem;
+  letter-spacing: 0.18em;
+  color: var(--lime);
+}
+.tv-shell {
+  min-height: 100dvh;
+  background: #111610;
+  padding: 0 3vw 3vw;
+}
+.tv-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 15px;
+  padding: 14px 0;
+  border-bottom: 1px solid #34402e;
+}
+.tv-toolbar > a {
+  font-weight: 900;
+  font-size: 1.4rem;
+  letter-spacing: -0.05em;
+}
+.tv-toolbar > a > span {
+  color: var(--lime);
+}
+.tv-toolbar > div {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.tv-toolbar > div > span {
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+.screen-connect {
+  max-width: 650px;
+  margin: 6vh auto;
+  text-align: center;
+}
+.screen-connect > svg {
+  color: var(--lime);
+}
+.screen-connect h1 {
+  margin: 20px 0;
+}
+.screen-connect > p {
+  margin: 20px 0;
+}
+.screen-connect form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  max-width: 340px;
+  margin: 32px auto;
+}
+.screen-connect input {
+  font-size: 2rem;
+  font-weight: 800;
+  letter-spacing: 0.2em;
+  padding: 16px;
+  text-align: center;
+  border-radius: 12px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  color: var(--lime);
+  width: 100%;
+}
+.screen-connect .button {
+  justify-content: center;
+}
+.tv-room-bar {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  padding: 22px 0;
+  border-bottom: 1px solid #34402e;
+}
+.tv-room-bar > span {
+  font-size: clamp(0.8rem, 1.25vw, 1.4rem);
+  color: var(--muted);
+}
+.tv-room-bar strong {
+  color: #f6faef;
+}
+.tv-room-bar .tv-room-code {
+  color: var(--lime);
+  font-size: clamp(1.5rem, 3vw, 3rem);
+  letter-spacing: 0.12em;
+}
+.tv-room-bar > div:last-child {
+  margin-left: auto;
+}
+.tv-lobby {
+  display: grid;
+  grid-template-columns: 1fr 270px;
+  gap: 5vw;
+  align-items: center;
+  min-height: 65vh;
+}
+.tv-lobby h1 {
+  font-size: clamp(3rem, 6vw, 7rem);
+  margin: 20px 0;
+}
+.tv-lobby > section > p {
+  font-size: clamp(1rem, 1.5vw, 1.6rem);
+}
+.tv-lobby aside {
+  background: #eaf2e1;
+  color: #182510;
+  padding: 16px;
+  border-radius: 24px;
+  text-align: center;
+}
+.tv-lobby aside img {
+  width: 100%;
+  height: auto;
+  display: block;
+  image-rendering: pixelated;
+}
+.tv-lobby aside strong {
+  font-size: 2rem;
+  letter-spacing: 0.14em;
+  display: block;
+  margin: 12px 0;
+}
+.tv-lobby aside p {
+  color: #42543c;
+}
+.tv-roster {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin: 32px 0;
+}
+.tv-roster > span {
+  padding: 12px 20px;
+  background: #283421;
+  border: 1px solid #536a42;
+  border-radius: 100px;
+  font-size: clamp(1rem, 1.5vw, 1.6rem);
+}
+.tv-game-heading {
+  margin: 24px 0;
+}
+.tv-game-content h1,
+.tv-instructions h1,
+.tv-final h1 {
+  font-size: clamp(2rem, 3.8vw, 5rem);
+  line-height: 1.12;
+  margin: 20px 0 30px;
+  max-width: 1400px;
+}
+.tv-options,
+.tv-projects {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+}
+.tv-options article,
+.tv-projects article {
+  background: #242d20;
+  border: 1px solid #536446;
+  padding: 24px;
+  border-radius: 20px;
+  font-size: clamp(1.2rem, 2vw, 2rem);
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+.tv-options b,
+.tv-projects b {
+  display: inline-grid;
+  place-items: center;
+  border: 1px solid #93a77e;
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  margin-right: 16px;
+  color: var(--lime);
+}
+.tv-options small {
+  display: block;
+  color: var(--muted);
+  font-size: 1rem;
+  margin-top: 12px;
+}
+.tv-projects {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+.tv-projects h2 {
+  font-size: clamp(1.3rem, 2.5vw, 2.5rem);
+  margin: 20px 0;
+}
+.tv-projects p,
+.tv-game-content > p {
+  font-size: clamp(1.1rem, 1.6vw, 1.7rem);
+}
+.tv-scores {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+  margin: 24px 0;
+}
+.tv-scores > span {
+  display: flex;
+  gap: 20px;
+  justify-content: space-between;
+  background: #242d20;
+  padding: 18px;
+  border-radius: 14px;
+  font-size: clamp(1rem, 1.5vw, 1.8rem);
+}
+.tv-scores b {
+  color: var(--lime);
+}
+.tv-instructions ol {
+  font-size: clamp(1.1rem, 1.8vw, 2rem);
+  line-height: 1.6;
+  padding-left: 1.5em;
+  max-width: 1200px;
+}
+.tv-instructions li {
+  margin: 18px 0;
+}
+.tv-progress {
+  margin-top: 24px;
+}
+.tv-answer-reveal > h2 {
+  color: var(--lime);
+  margin: 14px 0 24px;
+}
+.tv-answer-reveal > p {
+  font-size: 1.3rem;
+}
+.tv-final {
+  padding-top: 3vh;
+}
+@media (max-width: 750px) {
+  .tv-toolbar {
+    flex-wrap: wrap;
+  }
+  .tv-toolbar > div > span {
+    display: none;
+  }
+  .tv-lobby {
+    grid-template-columns: 1fr;
+    padding-top: 24px;
+  }
+  .tv-lobby aside {
+    max-width: 260px;
+    margin: auto;
+  }
+  .tv-room-bar {
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  .tv-room-bar > span {
+    width: 100%;
+  }
+  .tv-options,
+  .tv-projects {
+    grid-template-columns: 1fr;
+  }
+  .screen-tool-actions {
+    flex-direction: column;
+  }
+  .screen-pair-code {
+    font-size: 2rem;
+  }
+  .screen-tools {
+    padding: 18px;
+  }
+}

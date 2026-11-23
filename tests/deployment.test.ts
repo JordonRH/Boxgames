@@ -24,6 +24,10 @@ test("deployment health failure restores and checks the previous image; supersed
   executable("git", `printf '%s\\trefs/heads/main\\n' "\${MOCK_MAIN}"\n`);
   executable("sleep", "exit 0\n");
   executable(
+    "python3",
+    '[[ "$*" == *"preflight --approved-config --selector live --compose"* ]] || exit 91\nexit "${MOCK_GATE_EXIT:-0}"\n',
+  );
+  executable(
     "docker",
     `case "$1" in
  ps) printf 'boxgame:${previous}\\n';;
@@ -51,6 +55,12 @@ test("deployment health failure restores and checks the previous image; supersed
       `boxgame:${sha}`,
       `boxgame:${previous}`,
     ]);
+    const blocked = spawnSync("bash", [script, dir, sha], {
+      env: { ...env, MOCK_GATE_EXIT: "2" },
+      encoding: "utf8",
+    });
+    assert.equal(blocked.status, 2, "failed preflight must stop cutover");
+    assert.equal(readFileSync(log, "utf8").trim().split("\n").length, 2);
     const skipped = spawnSync("bash", [script, dir, previous], {
       env,
       encoding: "utf8",

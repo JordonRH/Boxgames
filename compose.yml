@@ -12,9 +12,17 @@ services:
       proxy:
         aliases: [boxgame]
     restart: unless-stopped
+    labels:
+      autoheal: "true"
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 15s
+      timeout: 3s
+      start_period: 15s
+      retries: 3
     init: true
     ports:
-      - "${BIND_ADDRESS:-127.0.0.1}:${HOST_PORT:-8100}:3000"
+      - "127.0.0.1:8100:3000"
     environment:
       PUBLIC_ORIGIN: ${PUBLIC_ORIGIN:-https://boxgame.jrhtechservices.party}
       ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-http://127.0.0.1:8100,http://localhost:8100}

@@ -25,7 +25,7 @@ Proxy identity controls must trust only the actual immediate upstream peer; do n
 3. A narrowly scoped publish job uses its temporary Actions token to create that commit's public release. No permanent deployment secret is configured.
 4. The Linux updater polls main and downloads only its matching release over HTTPS.
 5. Checksum and archive allowlist checks run before extraction/execution.
-6. The script checks main again, loads the image, updates only Compose project `boxgame`, and verifies the revision and health.
+6. The script checks main again, loads the image, runs the bundled JRH compliance preflight against the release Compose definition and live controller selector, then updates only Compose project `boxgame` and verifies the revision and health. A failed gate stops before cutover. CI also validates both authoritative Compose definitions before packaging.
 7. Failed startup restores the previous image and verifies its health. The agent retries after five minutes; an operator must intervene if rollback also fails.
 
 The first deployment has no previous image unless you ran the local image first. A healthy old image is kept for rollback; there is no gameplay-state rollback.
@@ -50,12 +50,13 @@ docker compose -f compose.updater.yml stop updater
 List previous app image tags with `docker image ls boxgame`. To restore a selected existing image, substitute its actual SHA:
 
 ```bash
+python3 scripts/jrh-compliance.py preflight --approved-config --selector all --compose compose.yml
 BOXGAME_IMAGE=boxgame:<previous-commit-sha> docker compose up -d --no-build
 ```
 
 Verify health before restarting the updater. It will attempt the current main release again. Use a reviewed revert commit to restore previous source behavior permanently.
 
-Docker restart policies restore both services after daemon/host restart. No cron job or host system service is required. Update the updater image periodically using `docker compose -f compose.updater.yml up -d --build`; application releases do not silently replace the deployment agent itself.
+Docker restart policies restore both services after daemon/host restart. No cron job or host system service is required. Update the updater image periodically after `python3 scripts/jrh-compliance.py preflight --approved-config --selector all --compose compose.updater.yml`, using `docker compose -f compose.updater.yml up -d --build`; application releases do not silently replace the deployment agent itself.
 
 Never read real `.env`, tunnel configuration, container environment, credential files, or secret-bearing logs without the workspace's explicit three-confirmation process. No such source is needed for normal Boxgame deployment.
 
@@ -71,3 +72,15 @@ Preserve the Git repository and release references. Runtime rooms are intentiona
 - A real phone and a separate PC join via code/QR, receive only their private views, and finish a round.
 - Reconnect and host pause are checked on actual browsers.
 - Public edge/QR/proxy identity checks are operator deployment checks, not inferred from local container health.
+
+## Health and recovery policy
+
+Both production Compose definitions persist `restart: unless-stopped` and `autoheal: "true"`. The app health check calls its own `http://127.0.0.1:3000/api/health` every 15 seconds (3-second timeout, 15-second startup grace, 3 retries). It never depends on the public route. The shared `docker-autoheal` controller performs unhealthy-container recovery; no per-app controller, boot script or new Docker socket mount is added. A deliberate manual stop remains stopped.
+
+The existing updater is the only Boxgame Docker socket consumer. Its local check verifies `/state/heartbeat` was touched within twenty minutes, every sixty seconds with ninety seconds startup grace and two retries. The loop touches it before each poll; the grace accommodates bounded release downloads (one retry, five minutes per attempt), health verification and the five-minute failed-deployment backoff. It checks loop progress, not GitHub reachability. Python 3 and PyYAML are included in the updater image for the bundled preflight. Update this updater image before publishing releases that include `scripts/jrh-compliance.py`; its archive allowlist explicitly permits that file.
+
+The pre-existing compliance checker and deployment-script gate were preserved and packaged into the CI release. The release path is enforced through the updater; raw Docker/Compose commands are still capable of bypassing a script-level gate. Do not claim daemon-wide enforcement. The canonical checker is `../ops-compliance/jrh_compliance.py`; keep the bundled copy synchronized.
+
+Persistent storage: only the existing `updater-state` volume mounted at `/state`; it contains public releases and revision markers. No game database, personal profiles or durable answer history exists. Room state, pending pairing codes, screen credentials and scores are held in process memory and disappear on room expiry or restart. Pass-one-phone play lives only in its browser tab. See the backup procedure above; there is no gameplay data to restore.
+
+The existing dashboard entry stays at `https://boxgame.jrhtechservices.party`; no dashboard, tunnel or route modification is required by the menu/display changes. TV/PC receiver URL: `https://boxgame.jrhtechservices.party/screen`. Fullscreen and optional native casting remain subject to the receiving browser’s capabilities and user permission.

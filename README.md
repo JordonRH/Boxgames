@@ -49,6 +49,7 @@ Requires Docker Engine and Docker Compose v2. No database or game credentials ar
 This server already has the shared `aitrace_proxy` Docker network used by the other public apps. Boxgame joins it with the DNS alias `boxgame`. On a fresh machine, create that external network first (`docker network create aitrace_proxy`), or set `PROXY_NETWORK` to your existing proxy network.
 
 ```bash
+python3 scripts/jrh-compliance.py preflight --approved-config --selector all --compose compose.yml
 docker compose up -d --build
 curl -fsS http://127.0.0.1:8100/api/health
 ```
@@ -63,11 +64,7 @@ The operator performs every tunnel/route action and every `sudo` command. Hostna
 
 ### Local Wi-Fi play
 
-Find the Linux machine's LAN address with `hostname -I`, choosing its Wi-Fi/Ethernet address that phones can reach, not a Docker address. For example:
-
-```bash
-PUBLIC_ORIGIN=http://192.168.1.50:8100 BIND_ADDRESS=192.168.1.50 docker compose up -d --build
-```
+Find the Linux machine's LAN address with `hostname -I`, choosing its Wi-Fi/Ethernet address that phones can reach, not a Docker address. The production Compose port is fixed to localhost for JRH policy; `BIND_ADDRESS` and `HOST_PORT` no longer override it. For an isolated LAN deployment, prepare and review a separate explicit port binding and set `PUBLIC_ORIGIN` to that reachable address. Do not change this production bind to make a TV connect: use the public URL on both devices.
 
 Open `http://192.168.1.50:8100` on the host and phones/PCs on the same network. Replace that example address with yours. Guest Wi-Fi client isolation or a firewall may block local access. The host screen warns when its configured join address is localhost. Nothing depends on a phone-specific app or platform.
 
@@ -144,8 +141,27 @@ There is no game-state database or backup. Back up source, original content, rel
 
 React + TypeScript + Express + Socket.IO. One authoritative Node process. `server/rooms` owns identity, admissions, timers, reconnects, and authorization. `server/games/parcel.ts` contains rules/scoring without transport or UI dependencies. `shared` defines authorized views and event types. Host and player projections are built separately; private state is not broadcast and hidden with CSS.
 
-Target: up to 100 rooms / 900 host-and-player connections, pending deployment-specific validation. Hard ceilings are configurable downwards. No horizontal replicas: a second process would have a separate room registry.
+Target: 80 fully occupied rooms / at most 900 total host, player and paired-screen connections on a 2-core, 2 GiB Linux host, pending deployment-specific load validation. Two displays per room count against the connection ceiling; network/proxy quotas can reduce capacity. Hard ceilings are configurable downwards. No horizontal replicas: a second process would have a separate room registry.
 
 The synthetic fast-round sample measured about 32 Mbps outbound payload at that target; budget **50 Mbps upload** for internet headroom. Default abuse quotas allow five owned rooms per network identity, so a large event behind one shared NAT needs an explicit quota adjustment. The load harness gives each room its own synthetic network identity; it does not imply those quotas disappear in production.
 
 The accepted product specification and remaining risks are in [docs/specification.md](docs/specification.md).
+
+## Choose your setup
+
+- **Shared screen:** create a room from a PC, laptop or phone; each player uses their own phone or PC. A paired TV/PC shows only the public game.
+- **Host on phone:** the host gets a player seat automatically. Friends join with the room code. A separate display is optional.
+- **Pass one phone:** Pocket Circuit runs locally in the browser. Three to twelve people take turns answering original spoken challenges. Two turns each, twenty seconds per turn, two points for three accepted answers. The group judges; ties share the win. Refreshing or leaving loses this local game. Nothing from it is sent to the game server.
+
+### Put the game on a TV or PC
+
+1. In your room, choose **Connect a screen** below the host controls.
+2. On the TV/PC browser open **https://boxgame.jrhtechservices.party/screen**.
+3. Enter the separate screen pairing code within two minutes. It works once. Players use the normal room code, not this pairing code.
+4. Tap **Enter fullscreen** on the receiving browser if it did not enter fullscreen when connecting. Browser permissions require a local tap; the host cannot force this remotely.
+
+The paired screen shows the lobby, public questions, submission counts, reveal results and scores. It receives no private card hand, bluff choices or live guessing word, and has no host/player powers. Two screens may connect per room; disconnects can resume for five minutes. **Disconnect shared screens** revokes both screen credentials immediately. A screen disconnect never pauses a round. Screen credentials stay in that tab’s session storage and are separate from host/player credentials.
+
+**Cast / choose screen** uses the browser’s optional Presentation API when available. Browser support and receivers vary. The reliable path for a TV with a browser is the pairing flow above. For a Chromecast-capable TV, open the public shared-screen tab in desktop Chrome and use Chrome’s Cast tab command. Cast that tab only: casting the host/controller tab can expose your own private information. No registered Google Cast receiver or universal device discovery is bundled. See [Chrome casting guidance](https://support.google.com/chromecast/answer/3228332) and [Presentation API compatibility](https://developer.mozilla.org/en-US/docs/Web/API/PresentationRequest).
+
+Both devices need access to the configured public URL. Being on the same Wi-Fi does not require exposing another server port. Direct LAN-only deployments require an explicitly reviewed LAN bind and `PUBLIC_ORIGIN` set to the reachable LAN address; the JRH production Compose file intentionally binds diagnostics only to localhost.

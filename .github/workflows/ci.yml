@@ -25,6 +25,11 @@ jobs:
           cache: npm
       - run: npm ci --no-audit --no-fund
       - run: npm audit --omit=dev --audit-level=high
+      - name: Check deployment policy
+        run: |
+          python3 -m venv /tmp/boxgame-policy
+          /tmp/boxgame-policy/bin/pip install PyYAML==6.0.3
+          /tmp/boxgame-policy/bin/python scripts/jrh-compliance.py preflight --approved-config --selector all --compose compose.yml --compose compose.updater.yml
       - run: npm test
       - run: npm run build
       - name: Build release container
@@ -52,6 +57,7 @@ jobs:
           docker save "boxgame:$REVISION" | gzip > release/image.tar.gz
           cp compose.yml release/compose.yml
           cp scripts/deploy-image.sh release/scripts/deploy-image.sh
+          cp scripts/jrh-compliance.py release/scripts/jrh-compliance.py
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
         with:

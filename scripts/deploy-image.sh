@@ -8,6 +8,7 @@ if [[ "$remote_sha" != "$release_sha" ]]; then echo 'Release superseded by a new
 previous_image="$(docker ps -a --filter 'name=^/boxgame$' --format '{{.Image}}')"
 docker load --input "$bundle_path/image.tar.gz" > /dev/null
 export BOXGAME_IMAGE="boxgame:$release_sha"
+python3 "$(dirname "${BASH_SOURCE[0]}")/jrh-compliance.py" preflight --approved-config --selector live --compose "$bundle_path/compose.yml"
 healthy() {
   docker exec boxgame node -e 'fetch("http://127.0.0.1:3000/api/health").then(async r=>{const d=await r.json();process.exit(r.ok&&d.revision===process.argv[1]?0:1)}).catch(()=>process.exit(1))' "$1" 2>/dev/null
 }

@@ -88,6 +88,11 @@ try {
       .sort(),
     ["blackout-run", "blank-slate", "clue-crew", "crowd-pick", "false-front"],
   );
+  const pair = await command(host, "host:screen", {});
+  const display = await connect();
+  await command(display, "display:join", { code: pair.code });
+  assert.equal(states.get(display).role, "display");
+  assert.equal(states.get(display).private, null);
   await command(host, "host:play", { name: "Smoke host" });
   const hostId = states.get(host).playerId;
   assert.ok(hostId);
@@ -118,6 +123,10 @@ try {
     await until(() =>
       players.every((p) => states.get(p)?.game?.phase === "allocate"),
     );
+    await until(() => states.get(display)?.game?.phase === "allocate");
+    assert.equal(states.get(display).private, null);
+    assert.equal(states.get(display).playerId, null);
+    assert.equal(states.get(display).id, states.get(host).id);
     assert.equal(states.get(host).role, "host");
     assert.equal(states.get(host).playerId, hostId);
     if (gameKey === "blank-slate") {
