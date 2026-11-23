@@ -88,6 +88,7 @@ try {
       .sort(),
     ["blackout-run", "blank-slate", "clue-crew", "crowd-pick", "false-front"],
   );
+  assert.equal(states.get(host).playerLimit, null);
   const pair = await command(host, "host:screen", {});
   const display = await connect();
   await command(display, "display:join", { code: pair.code });
@@ -300,6 +301,7 @@ try {
       teams: true,
       hostPlayer: true,
       privateViews: true,
+      sharedScreen: true,
       transports: ["polling", "websocket"],
     }),
   );

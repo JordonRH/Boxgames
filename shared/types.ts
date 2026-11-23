@@ -135,6 +135,7 @@ export interface GameSummary {
   hidden?: boolean;
 }
 export interface RoomView {
+  playerLimit?: number | null;
   id: string;
   code: string;
   role: "host" | "player" | "pending" | "display";

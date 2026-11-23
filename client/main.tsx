@@ -790,7 +790,10 @@ function Room({
         )}
         <div className="section-label">
           <h2>Your people</h2>
-          <span>{room.players.length}/8</span>
+          <span>
+            {room.players.length}
+            {room.playerLimit ? `/${room.playerLimit}` : ""}
+          </span>
         </div>
         <Roster room={room} action={action} busy={busy} />
         {!room.hostConnected && (
@@ -810,7 +813,12 @@ function Room({
           <h1>
             Bring your people<span className="lime-text">.</span>
           </h1>
-          <p>Choose a game. Let your friends in. Tap Start.</p>
+          <p>
+            Choose a game. Let your friends in. Tap Start.{" "}
+            {room.playerLimit
+              ? `Room limit: ${room.playerLimit} players.`
+              : "No per-room player cap; shared server connection limits apply."}
+          </p>
         </div>
         <Button
           className="subtle"
@@ -860,6 +868,13 @@ function Room({
             <section className="admissions" aria-label="Join requests">
               <div className="section-label">
                 <h2>At the door</h2>
+                <Button
+                  className="primary small"
+                  disabled={busy || room.locked}
+                  onClick={() => action("host:admit:all", {})}
+                >
+                  Let everyone in
+                </Button>
                 <span className="count-badge">{room.pending.length}</span>
               </div>
               {room.pending.map((p) => (
@@ -890,7 +905,10 @@ function Room({
           )}
           <div className="section-label">
             <h2>The good company</h2>
-            <span>{room.players.length}/8 players</span>
+            <span>
+              {room.players.length}
+              {room.playerLimit ? `/${room.playerLimit}` : ""} players
+            </span>
           </div>
           <Roster room={room} action={action} busy={busy} />
         </section>
@@ -972,7 +990,7 @@ function Room({
                   </div>
                   <p>{game.tagline}</p>
                   <small>
-                    {game.minPlayers}–8 players · {game.minutes}
+                    {game.minPlayers}+ players · {game.minutes}
                   </small>
                 </button>
               ))}

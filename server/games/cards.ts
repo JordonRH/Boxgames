@@ -10,6 +10,7 @@ interface Card {
 }
 export class CardsGame extends SimpleGame {
   private order: string[];
+  private large: boolean;
   private judged = new Set<string>();
   private judge: string;
   private hands = new Map<string, Card[]>();
@@ -26,12 +27,20 @@ export class CardsGame extends SimpleGame {
     players: { id: string; name: string }[],
     options: GameOptions = {},
   ) {
-    super(players, players.length, options);
-    this.order = players.map((p) => p.id);
+    super(players, players.length > 8 ? 6 : players.length, options);
+    this.large = players.length > 8;
+    this.order = this.large
+      ? this.mixed(players.map((p) => p.id))
+      : players.map((p) => p.id);
+    if (this.large)
+      this.notice =
+        "Large group: six rounds with randomly selected rotating judges. Cards can repeat across different hands. Read all plays on the judge’s controller; the shared screen cycles through them.";
     this.judge = this.order[0];
-    this.deck = this.mixed(this.unused("cards", answers, (text) => text));
+    this.deck = this.mixed(
+      this.large ? [...answers] : this.unused("cards", answers, (text) => text),
+    );
     // A full game, including one five-card refresh per player, must fit.
-    if (this.deck.length < players.length * (players.length + 9))
+    if (!this.large && this.deck.length < players.length * (players.length + 9))
       throw new GameError(
         "content_exhausted",
         "Not enough fresh response cards for a full game. Reset used content in the lobby.",
@@ -39,19 +48,29 @@ export class CardsGame extends SimpleGame {
     this.promptDeck = this.reserve(
       "prompts",
       prompts,
-      players.length,
+      this.rounds,
       (text) => text,
     );
-    for (const p of players)
-      this.hands.set(
-        p.id,
-        Array.from({ length: 5 }, () => this.draw()),
-      );
+    for (const p of players) this.hands.set(p.id, this.deal());
   }
-  private draw(): Card {
-    const text = this.deck.pop()!;
-    this.seen("cards", text);
+  private draw(exclude: string[] = []): Card {
+    if (this.large && !this.deck.some((text) => !exclude.includes(text)))
+      this.deck = this.mixed([...answers]);
+    const index = this.deck.findIndex((text) => !exclude.includes(text));
+    if (index < 0)
+      throw new GameError(
+        "content_exhausted",
+        "Not enough fresh response cards. Reset used content in the lobby.",
+      );
+    const [text] = this.deck.splice(index, 1);
+    if (!this.large) this.seen("cards", text);
     return { id: randomUUID(), text };
+  }
+  private deal(exclude: string[] = []): Card[] {
+    const hand: Card[] = [];
+    for (let i = 0; i < 5; i++)
+      hand.push(this.draw([...exclude, ...hand.map((c) => c.text)]));
+    return hand;
   }
   get advancesToInput() {
     return (
@@ -60,6 +79,8 @@ export class CardsGame extends SimpleGame {
     );
   }
   private nextJudge() {
+    if (this.large && this.round >= this.rounds && this.phase === "reveal")
+      return undefined;
     return this.order.find((id) => this.hasPlayer(id) && !this.judged.has(id));
   }
   waitingPlayers() {
@@ -98,7 +119,9 @@ export class CardsGame extends SimpleGame {
   duration(base: number) {
     return !this.input || base === 0
       ? null
-      : (this.phase === "vote" ? Math.max(60, base) : base) * 1000;
+      : (this.phase === "vote"
+          ? Math.max(60, base, this.options.length * 4)
+          : base) * 1000;
   }
   submit(id: string, action: "submit" | "vote", payload: unknown) {
     if (!this.hasPlayer(id))
@@ -122,7 +145,7 @@ export class CardsGame extends SimpleGame {
         );
       this.hands.set(
         id,
-        Array.from({ length: 5 }, () => this.draw()),
+        this.deal((this.hands.get(id) ?? []).map((c) => c.text)),
       );
       this.refreshed.add(id);
       return;
@@ -153,7 +176,7 @@ export class CardsGame extends SimpleGame {
         );
       const [card] = hand.splice(index, 1);
       this.plays.set(id, card);
-      hand.push(this.draw());
+      hand.push(this.draw([...hand.map((c) => c.text), card.text]));
     } else if (this.phase === "vote" && action === "vote") {
       if (id !== this.judge)
         throw new GameError(

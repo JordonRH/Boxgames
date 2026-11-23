@@ -46,6 +46,7 @@ export interface Config {
   roomsPerNetwork: number;
   connectionsPerNetwork: number;
   testMode?: boolean;
+  maxPlayersPerRoom?: number;
 }
 interface Player {
   id: string;
@@ -135,6 +136,32 @@ export class RoomManager {
   stop() {
     clearInterval(this.timer);
   }
+  private get playerBudget() {
+    return this.config.maxPlayersPerRoom && this.config.maxPlayersPerRoom > 0
+      ? Math.min(this.config.maxPlayersPerRoom, this.config.maxConnections)
+      : this.config.maxConnections;
+  }
+  private admit(room: Room, pId: string) {
+    const p = room.pending.get(pId);
+    if (!p || p.expires <= this.clock())
+      throw new Fault("request_expired", "That request expired.");
+    if (room.game || room.locked || room.players.size >= this.playerBudget)
+      throw new Fault(
+        "room_full",
+        "Return to an unlocked lobby with a free seat.",
+      );
+    room.pending.delete(pId);
+    room.players.set(pId, {
+      id: p.id,
+      name: p.name,
+      hash: p.hash,
+      socketId: p.socketId,
+      expires: p.socketId ? null : this.clock() + 300000,
+    });
+    const client = this.io.sockets.sockets.get(p.socketId ?? "");
+    if (client) client.data.role = "player";
+    room.activity = this.clock();
+  }
   code() {
     const alphabet = "23456789ABCDEFGHJKLMNPQRSTUVWXYZ";
     for (let attempt = 0; attempt < 20; attempt++) {
@@ -156,14 +183,14 @@ export class RoomManager {
         try {
           const rate =
             event === "room:resume"
-              ? 120
+              ? Math.max(120, this.config.maxConnections * 2)
               : event === "room:create"
                 ? 5
                 : event === "display:join"
                   ? 10
                   : event === "room:join"
-                    ? 30
-                    : 600;
+                    ? Math.max(30, this.config.maxConnections * 2)
+                    : Math.max(600, this.config.maxConnections * 6);
           const window = event === "room:create" ? 600000 : 60000;
           if (
             !this.limits.take(
@@ -362,9 +389,16 @@ export class RoomManager {
             "room_locked",
             "This room is locked or already playing. Ask the host to return to the lobby.",
           );
-        if (room.players.size >= 8 || room.pending.size >= 16)
+        if (room.players.size + room.pending.size >= this.playerBudget)
           throw new Fault("room_full", "This room is full.");
-        if (!this.limits.take(`join-room:${room.id}`, 20, 60000, this.clock()))
+        if (
+          !this.limits.take(
+            `join-room:${room.id}`,
+            Math.max(20, this.playerBudget * 2),
+            60000,
+            this.clock(),
+          )
+        )
           throw new Fault(
             "rate_limited",
             "This room has had a lot of requests. Please try again shortly.",
@@ -515,30 +549,23 @@ export class RoomManager {
       }
       return {};
     });
+    on("host:admit:all", z.object({}).strict(), () => {
+      const room = this.host(socket);
+      if (room.game || room.locked)
+        throw new Fault("room_locked", "Unlock the lobby first.");
+      for (const p of [...room.pending.values()]) {
+        if (p.expires > this.clock() && room.players.size < this.playerBudget)
+          this.admit(room, p.id);
+      }
+      this.broadcast(room);
+      return {};
+    });
     on(
       "host:admit",
       z.object({ id: z.string().uuid() }).strict(),
       ({ id: pId }) => {
         const room = this.host(socket);
-        const p = room.pending.get(pId);
-        if (!p || p.expires <= this.clock())
-          throw new Fault("request_expired", "That request expired.");
-        if (room.game || room.locked || room.players.size >= 8)
-          throw new Fault(
-            "room_full",
-            "Return to an unlocked lobby with a free seat.",
-          );
-        room.pending.delete(pId);
-        room.players.set(pId, {
-          id: p.id,
-          name: p.name,
-          hash: p.hash,
-          socketId: p.socketId,
-          expires: p.socketId ? null : this.clock() + 300000,
-        });
-        const s = this.io.sockets.sockets.get(p.socketId ?? "");
-        if (s) s.data.role = "player";
-        room.activity = this.clock();
+        this.admit(room, pId);
         this.broadcast(room);
         return {};
       },
@@ -592,7 +619,7 @@ export class RoomManager {
           carryScores: z.boolean().optional(),
           teams: z
             .record(z.string().uuid(), z.union([z.literal(0), z.literal(1)]))
-            .refine((teams) => Object.keys(teams).length <= 8)
+            .refine((teams) => Object.keys(teams).length <= this.playerBudget)
             .optional(),
         })
         .strict(),
@@ -606,7 +633,11 @@ export class RoomManager {
         )
           throw new Fault("invalid_teams", "Choose players from this room.");
         if (duration !== undefined) room.duration = duration;
-        room.settings = { ...room.settings, ...settings };
+        room.settings = {
+          ...room.settings,
+          ...settings,
+          teams: { ...room.settings.teams, ...settings.teams },
+        };
         room.activity = this.clock();
         this.broadcast(room);
         return {};
@@ -653,8 +684,11 @@ export class RoomManager {
           "Join yourself in the lobby before starting.",
         );
       if (room.hostPlayerId) return {};
-      if (room.players.size >= 8)
-        throw new Fault("room_full", "All eight seats are taken.");
+      if (room.players.size + room.pending.size >= this.playerBudget)
+        throw new Fault(
+          "room_full",
+          "This room has reached its configured capacity.",
+        );
       if (
         [...room.players.values(), ...room.pending.values()].some(
           (p) => p.name.toLocaleLowerCase() === name.toLocaleLowerCase(),
@@ -1077,16 +1111,21 @@ export class RoomManager {
       this.io.sockets.sockets
         .get(room.hostSocket)
         ?.emit("room:state", this.view(room, "host"));
-    for (const p of room.players.values())
+    const publicState = this.view(room, "display");
+    for (const p of room.players.values()) {
       if (p.socketId && p.socketId !== room.hostSocket)
-        this.io.sockets.sockets
-          .get(p.socketId)
-          ?.emit("room:state", this.view(room, "player", p.id));
+        this.io.sockets.sockets.get(p.socketId)?.emit("room:state", {
+          ...publicState,
+          role: "player",
+          playerId: p.id,
+          private: room.game?.privateView(p.id) ?? null,
+        } satisfies RoomView);
+    }
     for (const display of room.displays.values())
       if (display.socketId)
         this.io.sockets.sockets
           .get(display.socketId)
-          ?.emit("room:state", this.view(room, "display"));
+          ?.emit("room:state", publicState);
     for (const p of room.pending.values())
       if (p.socketId)
         this.io.sockets.sockets
@@ -1105,6 +1144,7 @@ export class RoomManager {
       playerId: playerId ?? null,
       locked: room.locked,
       hostConnected: !!room.hostSocket,
+      playerLimit: this.config.maxPlayersPerRoom || null,
       displayCount: [...room.displays.values()].filter((d) => d.socketId)
         .length,
       players:

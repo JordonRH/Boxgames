@@ -10,12 +10,12 @@ Production hostname: **https://boxgame.jrhtechservices.party**.
 
 | Game                          | Your whole move                                                                                                                                                       |
 | ----------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Blank Slate** · 3–8 players | Tap one of five cards to fill a silly blank. The rotating judge taps their favourite. Winner gets 1 point.                                                            |
-| **Clue Crew** · 2–8 players   | The guesser sees only a category. Friends read the word on their own phones and give spoken clues. One 60-second turn per player, or alternate teams toward a target. |
-| **Crowd Pick** · 3–8 players  | Read three odd community projects and tap one favourite. The most popular choice wins its voters 1 point. Five rounds.                                                |
+| **Blank Slate** · 3+ players | Tap one of five cards to fill a silly blank. The rotating judge taps their favourite. Winner gets 1 point.                                                            |
+| **Clue Crew** · 2+ players   | The guesser sees only a category. Friends read the word on their own phones and give spoken clues. One 60-second turn per player, or alternate teams toward a target. |
+| **Crowd Pick** · 3+ players  | Read three odd community projects and tap one favourite. The most popular choice wins its voters 1 point. Five rounds.                                                |
 
-| **Blackout Run** · 2–8 players | Tap a trivia answer, then a repair answer. Keep your charge through six rounds; everyone stays in. |
-| **False Front** · 2–8 players | Invent a fake word meaning, then spot the truth in a private two-choice duel. Five rounds. |
+| **Blackout Run** · 2+ players | Tap a trivia answer, then a repair answer. Keep your charge through six rounds; everyone stays in. |
+| **False Front** · 2+ players | Invent a fake word meaning, then spot the truth in a private two-choice duel. Five rounds. |
 
 ### Start playing
 
@@ -33,7 +33,7 @@ Blank Slate has 64 original prompts and 240 original response cards; Clue Crew h
 ## A longer game night
 
 - Choose **Casual**, **Mixed**, or **Hard** for Blackout Run in the lobby. Mixed ramps from three medium to three hard questions; other modes use their selected level throughout. Only trivia difficulty changes; repair puzzles keep their own challenge level.
-- Pick **Two teams** for Clue Crew with 4–8 players. Assign at least two people per team and choose a 10/15/20-point target. Teams alternate with rotating guessers; a lead after equal turns wins once a team reaches the target. After six turns each, highest score wins or a tie is shared. Solo remains available.
+- Pick **Two teams** for Clue Crew with 4+ players. Assign at least two people per team and choose a 10/15/20-point target. Teams alternate with rotating guessers; a lead after equal turns wins once a team reaches the target. After six turns each, highest score wins or a tie is shared. Solo remains available for groups of up to eight. Larger groups use teams automatically.
 - **Play again · same settings** on the final screen keeps room codes, seats, names, timing and game options. The short rules appear before the host begins. **Choose another game** returns to the same lobby.
 - Enable **Keep a session scoreboard** before playing to add completed-game points across the room. Each new game's own scores start at zero. Totals use raw points, not a ranking normalised across games or teams; Clue Crew credits individual points to each turn's guesser. Reset session scores separately in the lobby.
 - Blank Slate players get **one five-card hand refresh per game**, before playing a card on a non-judging turn. It remains used after reconnecting.
@@ -141,7 +141,7 @@ There is no game-state database or backup. Back up source, original content, rel
 
 React + TypeScript + Express + Socket.IO. One authoritative Node process. `server/rooms` owns identity, admissions, timers, reconnects, and authorization. `server/games/parcel.ts` contains rules/scoring without transport or UI dependencies. `shared` defines authorized views and event types. Host and player projections are built separately; private state is not broadcast and hidden with CSS.
 
-Target: 80 fully occupied rooms / at most 900 total host, player and paired-screen connections on a 2-core, 2 GiB Linux host, pending deployment-specific load validation. Two displays per room count against the connection ceiling; network/proxy quotas can reduce capacity. Hard ceilings are configurable downwards. No horizontal replicas: a second process would have a separate room registry.
+Planning target: 80 eight-player rooms (880 connections with separate hosts and two displays each) on a 2-core, 2 GiB Linux host, pending deployment-specific load validation. All hosts, players and displays count against a hard server-wide ceiling of 1,000 connections (configurable downwards); network/proxy quotas can reduce capacity. A 50-controller room is covered by automated integration tests; this is not a 1,000-player benchmark. No horizontal replicas: a second process would have a separate room registry.
 
 The synthetic fast-round sample measured about 32 Mbps outbound payload at that target; budget **50 Mbps upload** for internet headroom. Default abuse quotas allow five owned rooms per network identity, so a large event behind one shared NAT needs an explicit quota adjustment. The load harness gives each room its own synthetic network identity; it does not imply those quotas disappear in production.
 
@@ -165,3 +165,13 @@ The paired screen shows the lobby, public questions, submission counts, reveal r
 **Cast / choose screen** uses the browser’s optional Presentation API when available. Browser support and receivers vary. The reliable path for a TV with a browser is the pairing flow above. For a Chromecast-capable TV, open the public shared-screen tab in desktop Chrome and use Chrome’s Cast tab command. Cast that tab only: casting the host/controller tab can expose your own private information. No registered Google Cast receiver or universal device discovery is bundled. See [Chrome casting guidance](https://support.google.com/chromecast/answer/3228332) and [Presentation API compatibility](https://developer.mozilla.org/en-US/docs/Web/API/PresentationRequest).
 
 Both devices need access to the configured public URL. Being on the same Wi-Fi does not require exposing another server port. Direct LAN-only deployments require an explicitly reviewed LAN bind and `PUBLIC_ORIGIN` set to the reachable LAN address; the JRH production Compose file intentionally binds diagnostics only to localhost.
+
+## Larger groups
+
+There is no game-level eight-player limit. `MAX_PLAYERS_PER_ROOM=0` (default) removes a separate room cap; a positive value sets an optional operator cap. Pending requests reserve capacity when a cap is configured. All rooms still share the server's finite `MAX_CONNECTIONS` ceiling (default and supported maximum 1,000), and `CONNECTIONS_PER_NETWORK` may impose a lower network budget. Hosts and paired displays count too. These are resource safeguards, not a promise that this machine can sustain 1,000 people in one game.
+
+The lobby has **Let everyone in** for bulk approval. Per-network join/resume/action quotas scale with the server budget; room creation and per-socket limits remain bounded. Public room state is built once per broadcast and each controller gets only its own private overlay. Large broadcasts still grow with room size; 50 real Socket.IO controllers on one simulated network have been tested across every online game. Measure CPU, memory, latency and bandwidth before using substantially larger audiences.
+
+Above eight players, **Blank Slate** uses six rounds with randomly ordered rotating judges, rather than one round per attendee. A hand still contains five different private cards; one refresh gives five different replacements. Response texts may repeat between players or across large games, while fresh prompt history remains room-scoped. Judging gets at least four seconds per submitted card (or the host can choose untimed play). The TV cycles through six plays every eight seconds; the judge sees all plays on their controller.
+
+Above eight, **Clue Crew** uses two teams automatically, with at least two members per team and at most six turns per team. Only the active guesser's teammates get the secret word. Blackout Run, False Front and Crowd Pick keep their existing fixed round counts and accept the whole room. Phone and PC controllers use the same rules; the larger-room support also works when the host is on a phone. Pocket Circuit remains a deliberately local 3–12-person pass-one-phone game.

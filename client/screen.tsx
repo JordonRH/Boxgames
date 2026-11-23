@@ -335,6 +335,21 @@ export function ScreenStage({ room }: { room: RoomView }) {
       active = false;
     };
   }, [room.joinUrl]);
+  const [page, setPage] = useState(0);
+  const pageCount = Math.max(
+    1,
+    Math.ceil(
+      (room.game?.cards?.options.length ??
+        room.game?.bluff?.options.length ??
+        0) / 6,
+    ),
+  );
+  useEffect(() => {
+    setPage(0);
+    if (pageCount <= 1) return;
+    const timer = setInterval(() => setPage((p) => (p + 1) % pageCount), 8000);
+    return () => clearInterval(timer);
+  }, [room.game?.phaseId, pageCount]);
   const g = room.game,
     meta = games.find((m) => m.id === (g?.gameKey ?? room.selectedGame)),
     name = (id: string) =>
@@ -343,6 +358,7 @@ export function ScreenStage({ room }: { room: RoomView }) {
     <div className="tv-scores">
       {[...room.players]
         .sort((a, b) => b.score - a.score)
+        .slice(0, 10)
         .map((p) => (
           <span key={p.id}>
             <strong>{p.name}</strong>
@@ -368,7 +384,7 @@ export function ScreenStage({ room }: { room: RoomView }) {
             <p>{meta?.tagline}</p>
             <div className="tv-roster">
               {room.players.length ? (
-                room.players.map((p) => (
+                room.players.slice(0, 24).map((p) => (
                   <span key={p.id}>
                     {p.name}
                     {!p.connected ? " · offline" : ""}
@@ -378,6 +394,9 @@ export function ScreenStage({ room }: { room: RoomView }) {
                 <p>Players appear here when the host lets them in.</p>
               )}
             </div>
+            {room.players.length > 24 && (
+              <p>+ {room.players.length - 24} more players in the room</p>
+            )}
             <p>
               Pick your name on your own phone or PC. The host starts when
               everyone’s here.
@@ -404,6 +423,7 @@ export function ScreenStage({ room }: { room: RoomView }) {
               {g.rounds}
             </p>
             {g.paused && <p className="notice">{g.pauseReason}</p>}
+            {g.notice && <p className="notice">{g.notice}</p>}
           </div>
           {g.phase === "instructions" ? (
             <section className="tv-instructions">
@@ -418,6 +438,9 @@ export function ScreenStage({ room }: { room: RoomView }) {
           ) : g.phase === "final" ? (
             <section className="tv-final">
               <h1>{g.charades?.outcome ?? "That’s a game night."}</h1>
+              {room.players.length > 10 && (
+                <p>Top 10 · everyone’s score is on their controller</p>
+              )}
               {scores}
               <p>The host can play again or choose another game.</p>
             </section>
@@ -460,20 +483,30 @@ export function ScreenStage({ room }: { room: RoomView }) {
                     </p>
                   ) : (
                     <div className="tv-options">
-                      {g.cards.options.map((o) => (
-                        <article key={o.id}>
-                          {o.text}
-                          {o.authorId && (
-                            <small>
-                              {name(o.authorId)}
-                              {o.authorId === g.cards!.winnerId
-                                ? " · winner"
-                                : ""}
-                            </small>
-                          )}
-                        </article>
-                      ))}
+                      {g.cards.options
+                        .slice(page * 6, page * 6 + 6)
+                        .map((o) => (
+                          <article key={o.id}>
+                            {o.text}
+                            {o.authorId && (
+                              <small>
+                                {name(o.authorId)}
+                                {o.authorId === g.cards!.winnerId
+                                  ? " · winner"
+                                  : ""}
+                              </small>
+                            )}
+                          </article>
+                        ))}
                     </div>
+                  )}
+                  {pageCount > 1 && (
+                    <p>
+                      Plays {page * 6 + 1}–
+                      {Math.min((page + 1) * 6, g.cards.options.length)} of{" "}
+                      {g.cards.options.length} · cycles every 8 seconds. Judge
+                      sees every play on their controller.
+                    </p>
                   )}
                 </>
               )}
@@ -504,19 +537,21 @@ export function ScreenStage({ room }: { room: RoomView }) {
                     <div className="tv-answer-reveal">
                       <h2>{g.bluff.truth}</h2>
                       <div className="tv-options">
-                        {g.bluff.options.map((o) => (
-                          <article key={o.id}>
-                            {o.text}
-                            <small>
-                              {o.truth
-                                ? "True meaning"
-                                : o.authors.length
-                                  ? `Bluff by ${o.authors.map(name).join(" & ")}`
-                                  : "House bluff"}{" "}
-                              · {o.voters.length} votes
-                            </small>
-                          </article>
-                        ))}
+                        {g.bluff.options
+                          .slice(page * 6, page * 6 + 6)
+                          .map((o) => (
+                            <article key={o.id}>
+                              {o.text}
+                              <small>
+                                {o.truth
+                                  ? "True meaning"
+                                  : o.authors.length
+                                    ? `Bluff by ${o.authors.map(name).join(" & ")}`
+                                    : "House bluff"}{" "}
+                                · {o.voters.length} votes
+                              </small>
+                            </article>
+                          ))}
                       </div>
                     </div>
                   ) : (
@@ -557,7 +592,14 @@ export function ScreenStage({ room }: { room: RoomView }) {
                   {g.submitted} / {g.eligible} submitted
                 </p>
               )}
-              {g.phase === "reveal" && scores}
+              {g.phase === "reveal" && (
+                <>
+                  {room.players.length > 10 && (
+                    <p>Top 10 · everyone’s score is on their controller</p>
+                  )}
+                  {scores}
+                </>
+              )}
             </section>
           )}
         </>

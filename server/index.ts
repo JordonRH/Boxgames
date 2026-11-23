@@ -133,7 +133,7 @@ export function createApp(
   const full: Config = {
     maxRooms: 100,
     maxConnections: 1000,
-    connectionsPerNetwork: 100,
+    connectionsPerNetwork: 1000,
     roomsPerNetwork: 5,
     ...config,
     origin,
@@ -150,7 +150,11 @@ export function createApp(
         acceptsHandshake(req) &&
           io.engine.clientsCount < full.maxConnections &&
           (netCounts.get(net) ?? 0) < full.connectionsPerNetwork &&
-          limits.take(`connect:${net}`, 120, 60000),
+          limits.take(
+            `connect:${net}`,
+            Math.max(120, full.connectionsPerNetwork * 2),
+            60000,
+          ),
       );
     },
   });
@@ -235,7 +239,8 @@ if (
       origin: process.env.PUBLIC_ORIGIN ?? "http://localhost:5173",
       maxRooms: int(process.env.MAX_ROOMS, 100, 1, 100),
       maxConnections: int(process.env.MAX_CONNECTIONS, 1000, 1, 1000),
-      connectionsPerNetwork: int(process.env.CONNECTIONS_PER_NETWORK, 100),
+      connectionsPerNetwork: int(process.env.CONNECTIONS_PER_NETWORK, 1000),
+      maxPlayersPerRoom: int(process.env.MAX_PLAYERS_PER_ROOM, 0, 0, 1000),
       roomsPerNetwork: int(process.env.ROOMS_PER_NETWORK, 5),
     },
     {

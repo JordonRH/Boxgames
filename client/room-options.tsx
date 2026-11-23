@@ -38,17 +38,19 @@ export function RoomOptions({
             Clue Crew mode
             <select
               aria-label="Clue Crew mode"
-              value={settings.clueMode}
+              value={room.players.length > 8 ? "teams" : settings.clueMode}
               disabled={busy}
               onChange={(e) =>
                 action("host:settings", { clueMode: e.target.value })
               }
             >
-              <option value="solo">Everyone helps · individual scores</option>
-              <option value="teams">Two teams · 4–8 players</option>
+              <option value="solo" disabled={room.players.length > 8}>
+                Everyone helps · individual scores
+              </option>
+              <option value="teams">Two teams · 4+ players</option>
             </select>
           </label>
-          {settings.clueMode === "teams" && (
+          {(settings.clueMode === "teams" || room.players.length > 8) && (
             <>
               <label>
                 Team target
@@ -70,8 +72,9 @@ export function RoomOptions({
                 </select>
               </label>
               <p>
-                At least two players per team. Teams alternate; both get equal
-                turns. Up to six turns each.
+                Groups above eight use teams to keep the game short. At least
+                two players per team. Teams alternate; both get equal turns. Up
+                to six turns each.
               </p>
               <div className="team-picker">
                 {room.players.map((p, index) => (
@@ -85,7 +88,6 @@ export function RoomOptions({
                       onChange={(e) =>
                         action("host:settings", {
                           teams: {
-                            ...settings.teams,
                             [p.id]: Number(e.target.value),
                           },
                         })

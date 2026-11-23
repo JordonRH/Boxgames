@@ -35,13 +35,16 @@ export class CharadesGame extends SimpleGame {
         "content_exhausted",
         "All clue words have been used. Reset used content in the lobby.",
       );
-    if (options.settings?.clueMode === "teams") {
-      this.target = options.settings.teamTarget;
+    if (options.settings?.clueMode === "teams" || players.length > 8) {
+      if (players.length > 8)
+        this.notice =
+          "Large group: two teams keep the game to at most six turns each. Each turn has one guesser; only their teammates give clues.";
+      this.target = options.settings?.teamTarget ?? 15;
       this.teams = ["Team Lime", "Team Coral"].map((name, team) => ({
         name,
         ids: players
           .filter(
-            (p, index) => (options.settings!.teams[p.id] ?? index % 2) === team,
+            (p, index) => (options.settings?.teams[p.id] ?? index % 2) === team,
           )
           .map((p) => p.id),
         score: 0,

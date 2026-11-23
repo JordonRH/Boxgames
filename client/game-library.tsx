@@ -73,7 +73,7 @@ export function GameLibrary({
           <div className="library-facts">
             <span>
               <Users size={16} />
-              2–8 players online
+              Bring the whole group
             </span>
             <span>No accounts</span>
             <span>Phones & PCs welcome</span>
@@ -254,7 +254,7 @@ export function GameLibrary({
                     </div>
                     <div className="game-card-copy">
                       <div className="game-meta">
-                        {g.minPlayers}–8 players · {g.minutes}
+                        {g.minPlayers}+ players · {g.minutes}
                       </div>
                       <h2>{g.title}</h2>
                       <p>{g.tagline}</p>
